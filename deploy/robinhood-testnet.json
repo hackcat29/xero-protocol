@@ -1,0 +1,20 @@
+{
+  "network": "robinhood-testnet",
+  "chainId": 46630,
+  "note": "Robinhood's own testnet Stock Tokens (ERC-8056, beacon proxies; no oraclePaused flag). Tokens can't be minted, so each 1Y market is seeded from the deployer's balance; get more at https://faucet.testnet.chain.robinhood.com. None of these pay dividends, so opening yields are a nominal 0.5%. Prices (USD, 18 decimals) are Robinhood quotes from 3 Oct 2026, published to deployer-owned feeds because Chainlink has none on testnet.",
+  "realAssets": {
+    "symbols": ["TSLA", "AMZN", "PLTR", "NFLX", "AMD"],
+    "tokens": [
+      "0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E",
+      "0x5884aD2f920c162CFBbACc88C9C51AA75eC09E02",
+      "0x1FBE1a0e43594b3455993B5dE5Fd0A7A266298d0",
+      "0x3b8262A63d25f0477c4DDE23F83cfe22Cb768C93",
+      "0x71178BAc73cBeb415514eB542a8995b82669778d"
+    ],
+    "pricesWad": ["371200000000000000000", "251300000000000000000", "188780000000000000000", "67140000000000000000", "633700000000000000000"],
+    "openingYieldWad": "5000000000000000",
+    "tenorSecs": 31536000,
+    "tenorLabel": "1Y",
+    "seedBps": 9000
+  }
+}
