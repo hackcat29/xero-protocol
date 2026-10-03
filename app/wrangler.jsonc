@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/wrangler@4/config-schema.json",
+  // Static Vite build served from Workers static assets; client-side routes fall back to index.html.
+  "name": "xero",
+  "compatibility_date": "2026-10-02",
+  "assets": {
+    "directory": "./dist/",
+    "not_found_handling": "single-page-application"
+  },
+  "observability": { "enabled": true }
+}
