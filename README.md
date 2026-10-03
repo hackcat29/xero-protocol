@@ -2,7 +2,7 @@
 
 **Keep the stock. Trade the dividends.**
 
-**Live on Robinhood Chain testnet: [xeroprotocol.com](https://xeroprotocol.com)**
+**Live on Robinhood Chain testnet and Arbitrum Sepolia: [xeroprotocol.com](https://xeroprotocol.com)**
 
 Robinhood Stock Tokens never pay cash dividends. Dividends are reinvested, and the token's on-chain `uiMultiplier()` grows: each token comes to represent more shares. Xero splits a Stock Token into two independently tradable claims:
 
