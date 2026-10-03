@@ -1,0 +1,21 @@
+{
+  "name": "@xero/keeper",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Xero reporter + keeper: attests Robinhood corporate actions and maintains vaults",
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "once": "tsx src/main.ts --once",
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "viem": "^2.37.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.0"
+  }
+}
