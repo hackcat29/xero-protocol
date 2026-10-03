@@ -7,6 +7,9 @@
     "directory": "./dist/",
     "not_found_handling": "single-page-application"
   },
+  // Served only on the custom domains: no duplicate workers.dev copy or per-version preview URLs
+  "workers_dev": false,
+  "preview_urls": false,
   "routes": [
     { "pattern": "xeroprotocol.com", "custom_domain": true },
     { "pattern": "www.xeroprotocol.com", "custom_domain": true }
