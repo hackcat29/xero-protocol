@@ -50,12 +50,14 @@ PT plus YT always equals the deposited token, and they recombine at any time. Ma
 
 ---
 
-## Robinhood Chain testnet
+## Testnets
 
-The app targets Robinhood Chain testnet (chain 46630) by default. The deployment there ([address book](app/src/deployments/46630.json)) has 25 markets on two kinds of asset:
+The app runs on two public testnets and switches between them from the header (or with a link such as `?chain=arbitrum-sepolia`); Robinhood Chain testnet (46630) is the default. The Robinhood deployment ([address book](app/src/deployments/46630.json)) has 25 markets on two kinds of asset:
 
 - **Robinhood's own testnet Stock Tokens** (TSLA, AMZN, PLTR, NFLX, AMD), listed in [`deploy/robinhood-testnet.json`](deploy/robinhood-testnet.json). Each has a 1-year market seeded from the deployer's balance. Get more at the [Robinhood faucet](https://faucet.testnet.chain.robinhood.com). None of them pays dividends, so their YT accrues nothing unless Robinhood moves the multiplier, and the opening yields are a nominal 0.5%.
 - **ERC-8056 mocks of dividend payers** (AAPL, SCHD, XOM, SGOV) using the prices, multipliers and trailing dividends observed on mainnet on 2 Oct 2026, at five maturities from 1 week to 2 years. They have a public faucet (about $10k a day) and issuer controls for the deployer wallet: reinvest dividends, and split with or without attestation. This is where the dividend mechanics can be seen working.
+
+**Arbitrum Sepolia** (421614) has the mock dividend payers only, at the same five maturities, because Robinhood's Stock Tokens exist only on Robinhood Chain. It uses the Solidity pricing engine; the Stylus engine is optional.
 
 **Console** in the nav opens the testnet console. Price feeds are deployer-owned mocks for both kinds, because Chainlink has no feeds on testnet.
 
@@ -64,10 +66,11 @@ Requires Foundry, Node 20+ and pnpm.
 ```sh
 cast wallet import xero-testnet --interactive    # a testnet-only key, stored encrypted by Foundry
 # fund it with ~0.01 ETH and a few of each real token: https://faucet.testnet.chain.robinhood.com
-# (a full deploy costs ~0.002 ETH)
-./scripts/deploy-testnet.sh                      # deploys, writes app/src/deployments/46630.json, builds app/dist
-cd app && pnpm dev                               # app on :5173 against testnet
-./scripts/testnet-feeds.sh                       # every day or two: mock feeds go stale after 4 days
+# (a full deploy costs ~0.002 ETH on Robinhood Chain)
+./scripts/deploy-testnet.sh robinhood            # deploys, writes app/src/deployments/46630.json, builds app/dist
+./scripts/deploy-testnet.sh arbitrum             # same for Arbitrum Sepolia (421614); fund ~0.01 ETH via a faucet or the bridge
+cd app && pnpm dev                               # app on :5173; switch networks from the header
+./scripts/testnet-feeds.sh [robinhood|arbitrum]  # every day or two: mock feeds go stale after 4 days
 ```
 
 The app deploys to Cloudflare Workers ([`app/wrangler.jsonc`](app/wrangler.jsonc)) from GitHub Actions on every push to `main`, after the contract, Stylus, keeper and app checks pass. It serves `xeroprotocol.com` and `www.xeroprotocol.com`. CI needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets and reads `VITE_WALLETCONNECT_PROJECT_ID` from the repository variables; to deploy by hand, run `cd app && pnpm build && npx wrangler deploy`.
@@ -77,6 +80,7 @@ Put the keystore password in `~/.foundry/xero-testnet.password` (chmod 600) to s
 ```sh
 cd app && node scripts/smoke.mjs                             # every page, desktop + mobile, no console errors or overflow
 cd app && E2E_ACCOUNT=xero-testnet node scripts/e2e.mjs      # real UI + real testnet txs: buy, sell, fix, strip, recombine, LP
+# Arbitrum: E2E_CHAIN=arbitrum-sepolia E2E_RPC=https://sepolia-rollup.arbitrum.io/rpc in front of the same command
 ```
 
 The e2e run injects a browser wallet that signs inside the test process with that keystore account, so the key never reaches the page.

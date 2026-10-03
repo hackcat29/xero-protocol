@@ -56,6 +56,13 @@ main { flex: 1; }
 .logo-word { font-weight: 600; font-size: 20px; letter-spacing: -0.03em; }
 .nav-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .chain-pill { display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; border: 1px solid var(--line); border-radius: 99px; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.chain-pill-btn { background: transparent; cursor: pointer; font: inherit; font-size: 12.5px; transition: border-color 0.15s, color 0.15s; }
+.chain-pill-btn:hover, .chain-pill-btn[aria-expanded='true'] { color: var(--text); border-color: var(--muted-2); }
+.net { position: relative; }
+.net-menu { position: absolute; z-index: 50; top: calc(100% + 8px); right: 0; min-width: 250px; margin: 0; padding: 4px; list-style: none; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45); }
+.net-menu button { white-space: nowrap; display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 16px; padding: 9px 10px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--muted); font: inherit; font-weight: 550; text-align: left; cursor: pointer; }
+.net-menu button:hover, .net-menu [aria-selected='true'] button { color: var(--text); background: var(--surface-3); }
+.net-menu b { color: var(--amber); }
 .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--up); box-shadow: 0 0 0 3px var(--up-soft); display: inline-block; }
 .dot-dev { background: var(--amber); box-shadow: 0 0 0 3px var(--amber-soft); }
 html { scroll-behavior: smooth; }
@@ -80,7 +87,10 @@ section[id] { scroll-margin-top: 84px; }
 .tabbar { display: none; }
 @media (max-width: 760px) {
   .nav-inner { gap: 12px; }
-  .site-links, .app-tabs, .nav-sep, .chain-pill { display: none; }
+  .site-links, .app-tabs, .nav-sep { display: none; }
+  span.chain-pill { display: none; }
+  .chain-pill-btn { padding: 7px 9px; gap: 6px; }
+  .chain-pill-btn .net-name { display: none; }
   .tabbar { display: flex; position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; padding: 6px 12px calc(6px + env(safe-area-inset-bottom)); background: rgba(11, 13, 16, 0.92); backdrop-filter: blur(14px); border-top: 1px solid var(--line-soft); }
   .tabbar a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 0; border-radius: var(--r-sm); color: var(--muted); font-size: 11.5px; font-weight: 550; }
   .tabbar a.active { color: var(--text); }

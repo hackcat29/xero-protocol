@@ -1,7 +1,8 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit'
+import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink } from 'react-router'
 import { Logo } from './Brand'
-import { chain, isDemo, isDevnet } from '../lib/network'
+import { chain, isDemo, isDevnet, networks, switchNetwork } from '../lib/network'
 import { DevConsoleButton } from './DevConsole'
 
 export const REPO_URL = 'https://github.com/UncleTom29/xero-protocol'
@@ -44,10 +45,7 @@ export function AppNav() {
             </nav>
             <span className="nav-sep" aria-hidden="true" />
             {isDemo && <DevConsoleButton />}
-            <span className="chain-pill" title={`Connected network: ${chain.name}`}>
-              <i className={isDevnet ? 'dot dot-dev' : 'dot'} />
-              {chain.name}
-            </span>
+            <NetworkSwitch />
             <WalletButton />
           </div>
         </div>
@@ -57,6 +55,54 @@ export function AppNav() {
         <NavLink to="/portfolio"><PortfolioIcon />Portfolio</NavLink>
       </nav>
     </>
+  )
+}
+
+/** The network the app is reading and trading on. With several deployments it is a menu; reselecting reloads the app. */
+function NetworkSwitch() {
+  const [open, setOpen] = useState(false)
+  const root = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const away = (e: MouseEvent) => !root.current?.contains(e.target as Node) && setOpen(false)
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    document.addEventListener('mousedown', away)
+    document.addEventListener('keydown', esc)
+    return () => {
+      document.removeEventListener('mousedown', away)
+      document.removeEventListener('keydown', esc)
+    }
+  }, [open])
+
+  const dot = <i className={isDevnet ? 'dot dot-dev' : 'dot'} />
+  if (networks.length < 2) {
+    return (
+      <span className="chain-pill" title={`Network: ${chain.name}`}>
+        {dot}
+        {chain.name}
+      </span>
+    )
+  }
+  return (
+    <div className="net" ref={root}>
+      <button className="chain-pill chain-pill-btn" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((o) => !o)} title="Switch network">
+        {dot}
+        <span className="net-name">{chain.name}</span>
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3.5l3 3 3-3" /></svg>
+      </button>
+      {open && (
+        <ul className="net-menu" role="listbox" aria-label="Network">
+          {networks.map((n) => (
+            <li key={n.id} role="option" aria-selected={n.id === chain.id}>
+              <button onClick={() => switchNetwork(n.id)}>
+                <span>{n.name}</span>
+                {n.id === chain.id && <b aria-hidden="true">✓</b>}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }
 

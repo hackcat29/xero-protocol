@@ -18,6 +18,15 @@ export const robinhoodTestnet = defineChain({
   testnet: true,
 })
 
+export const arbitrumSepolia = defineChain({
+  id: 421614,
+  name: 'Arbitrum Sepolia',
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  rpcUrls: { default: { http: [import.meta.env.VITE_ARBITRUM_SEPOLIA_RPC ?? 'https://sepolia-rollup.arbitrum.io/rpc'] } },
+  blockExplorers: { default: { name: 'Arbiscan', url: 'https://sepolia.arbiscan.io' } },
+  testnet: true,
+})
+
 export const localChain = defineChain({
   id: 31337,
   name: 'Local devnet',
@@ -51,19 +60,67 @@ const books = Object.fromEntries(
   ),
 ) as Record<number, AddressBook>
 
-const CHAINS: Record<number, Chain> = { 4663: robinhoodChain, 46630: robinhoodTestnet, 31337: localChain }
+const CHAINS: Record<number, Chain> = {
+  4663: robinhoodChain,
+  46630: robinhoodTestnet,
+  421614: arbitrumSepolia,
+  31337: localChain,
+}
+/** Short names for `?chain=` links, e.g. https://xeroprotocol.com/markets?chain=arbitrum-sepolia */
+const SLUGS: Record<string, number> = { 'robinhood-testnet': 46630, 'arbitrum-sepolia': 421614, robinhood: 4663, local: 31337 }
+const TESTNETS = [46630, 421614]
 
-/** Target network: VITE_CHAIN_ID, else Robinhood Chain testnet. Mainnet builds set VITE_CHAIN_ID=4663, the local devnet 31337. */
-export const chainId: number = Number(import.meta.env.VITE_CHAIN_ID ?? 46630)
+/** Build-time default network: VITE_CHAIN_ID, else Robinhood Chain testnet. Mainnet builds set 4663, `scripts/dev.sh` 31337. */
+const DEFAULT_CHAIN_ID = Number(import.meta.env.VITE_CHAIN_ID ?? 46630)
+
+/** Networks a visitor can choose between: every deployment shipped in this build. A local-devnet build is pinned to it. */
+export const networks: Chain[] =
+  DEFAULT_CHAIN_ID === 31337
+    ? [localChain]
+    : [...new Set([DEFAULT_CHAIN_ID, ...Object.keys(books).map(Number).filter((id) => id !== 31337)])]
+        .map((id) => CHAINS[id])
+        .filter((c): c is Chain => !!c)
+
+const STORAGE_KEY = 'xero.chainId'
+const selectable = (id: number) => networks.some((n) => n.id === id)
+
+/** `?chain=` in the URL wins (and is remembered), then the visitor's last choice, then the build default. */
+function pickChainId(): number {
+  try {
+    const q = new URLSearchParams(window.location.search).get('chain')
+    const fromUrl = q ? (SLUGS[q] ?? Number(q)) : NaN
+    if (selectable(fromUrl)) {
+      localStorage.setItem(STORAGE_KEY, String(fromUrl))
+      return fromUrl
+    }
+    const saved = Number(localStorage.getItem(STORAGE_KEY))
+    if (selectable(saved)) return saved
+  } catch {}
+  return DEFAULT_CHAIN_ID
+}
+
+export const chainId: number = pickChainId()
 export const chain: Chain = CHAINS[chainId] ?? robinhoodTestnet
 export const book: AddressBook | undefined = books[chainId]
 export const isDevnet = chainId === 31337
-export const isTestnet = chainId === 46630
+export const isTestnet = TESTNETS.includes(chainId)
 /** Networks running the demo deployment (mock Stock Tokens with issuer controls and a faucet). */
 export const isDemo = isDevnet || isTestnet
 export const explorer = chain.blockExplorers?.default.url
 export const ROBINHOOD_FAUCET = 'https://faucet.testnet.chain.robinhood.com'
 export const isRealStock = (token: Address) => !!book?.realStocks?.some((t) => t.toLowerCase() === token.toLowerCase())
+
+/** Remembers the choice and reloads: chain, address book, clients and wallet config are all fixed at startup. */
+export function switchNetwork(id: number) {
+  if (id === chainId || !selectable(id)) return
+  try {
+    localStorage.setItem(STORAGE_KEY, String(id))
+    const url = new URL(window.location.href)
+    url.searchParams.delete('chain')
+    window.history.replaceState(null, '', url)
+  } catch {}
+  window.location.reload()
+}
 
 export const publicClient: PublicClient = createPublicClient({ chain, transport: http() })
 

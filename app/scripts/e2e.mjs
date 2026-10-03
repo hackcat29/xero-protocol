@@ -1,7 +1,8 @@
 // End-to-end UI test: connects through RainbowKit and runs every trade-ticket flow through real transactions
 // (approve -> simulate -> send -> confirm).
 //   node scripts/e2e.mjs [baseUrl]                          devnet: connects as the Alice persona
-//   E2E_ACCOUNT=xero-testnet node scripts/e2e.mjs [baseUrl] testnet: injects an EIP-1193 wallet that signs in this
+//   E2E_ACCOUNT=xero-testnet node scripts/e2e.mjs [baseUrl] testnet (add E2E_CHAIN=arbitrum-sepolia and
+//                                                           E2E_RPC=https://sepolia-rollup.arbitrum.io/rpc for Arbitrum): injects an EIP-1193 wallet that signs in this
 //                                                           process with that Foundry keystore account (or E2E_KEY),
 //                                                           claims test SCHD from the faucet if short, then runs the flows
 import puppeteer from 'puppeteer-core'
@@ -58,7 +59,9 @@ async function expectToast(title) {
 }
 const tab = (name) => clickText('.ticket-tabs [role="tab"]', name)
 
-await page.goto(`${BASE}/markets/SCHD?m=1Y`, { waitUntil: 'domcontentloaded' })
+// E2E_CHAIN picks the app's network (a ?chain= id or slug, remembered by the app) and E2E_RPC must match it
+const chainParam = process.env.E2E_CHAIN ? `&chain=${process.env.E2E_CHAIN}` : ''
+await page.goto(`${BASE}/markets/SCHD?m=1Y${chainParam}`, { waitUntil: 'domcontentloaded' })
 await page.waitForSelector('.ticket .amount')
 
 // connect through the RainbowKit modal: Alice on the devnet, the injected test wallet on testnet
