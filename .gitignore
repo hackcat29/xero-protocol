@@ -1,0 +1,29 @@
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/*/31337/
+
+# Rust / Stylus
+stylus/**/target/
+
+# Frontend
+app/node_modules/
+app/dist/
+app/src/lib/abis.json
+
+.anvil.log
+.DS_Store
+
+# Rehearsal outputs and test artefacts
+deploy/out/rehearsal-*
+app/smoke/
+services/keeper/node_modules/
+.env
+
+# Cloudflare
+.wrangler/
+app/.wrangler/
+
+# Forge simulations and mainnet-fork rehearsals (commit a real mainnet broadcast deliberately with -f)
+contracts/broadcast/*/*/dry-run/
+contracts/broadcast/DeployProduction.s.sol/4663/
