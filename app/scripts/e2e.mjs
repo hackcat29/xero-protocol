@@ -69,7 +69,7 @@ console.log(`ok   connected as ${wallet ? wallet.address : 'Alice'}`)
 
 // testnet wallets start empty: claim test SCHD through the console's faucet (once a day per address)
 if (wallet && (await wallet.schdBalance()) < 150n * 10n ** 18n) {
-  await clickText('button', 'Testnet')
+  await clickText('button', 'Console')
   await clickText('.console-faucet button', 'Get SCHD')
   await expectToast('Claim test SCHD')
   await page.keyboard.press('Escape')

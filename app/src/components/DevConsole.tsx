@@ -18,7 +18,7 @@ export function DevConsoleButton() {
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild>
-        <button className="btn btn-ghost btn-sm" title="Demo controls">{isTestnet ? 'Testnet' : 'Devnet'}</button>
+        <button className="btn btn-ghost btn-sm" title="Demo controls">Console</button>
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="overlay" />
@@ -88,7 +88,7 @@ function DevConsole() {
         {real ? (
           <>{asset.symbol} is Robinhood's own testnet Stock Token: it can't be minted and its multiplier moves only when Robinhood moves it. Price updates need the deployer wallet{isIssuer ? ' (connected)' : ''}.</>
         ) : (
-          <>Mock ERC-8056 Stock Token with live mainnet prices and multipliers, so dividends and splits can be simulated. Issuer actions need the {isDevnet ? <b>Issuer · devnet</b> : 'deployer'} wallet{isIssuer ? ' (connected)' : ''}.</>
+          <>Mock ERC-8056 Stock Token with live mainnet prices and multipliers, so dividends and splits can be simulated.</>
         )}
       </p>
       <section className="console-faucet">

@@ -57,7 +57,7 @@ The app targets Robinhood Chain testnet (chain 46630) by default. The deployment
 - **Robinhood's own testnet Stock Tokens** (TSLA, AMZN, PLTR, NFLX, AMD), listed in [`deploy/robinhood-testnet.json`](deploy/robinhood-testnet.json). Each has a 1-year market seeded from the deployer's balance. Get more at the [Robinhood faucet](https://faucet.testnet.chain.robinhood.com). None of them pays dividends, so their YT accrues nothing unless Robinhood moves the multiplier, and the opening yields are a nominal 0.5%.
 - **ERC-8056 mocks of dividend payers** (AAPL, SCHD, XOM, SGOV) using the prices, multipliers and trailing dividends observed on mainnet on 2 Oct 2026, at five maturities from 1 week to 2 years. They have a public faucet (about $10k a day) and issuer controls for the deployer wallet: reinvest dividends, and split with or without attestation. This is where the dividend mechanics can be seen working.
 
-**Testnet** in the nav opens the console. Price feeds are deployer-owned mocks for both kinds, because Chainlink has no feeds on testnet.
+**Console** in the nav opens the testnet console. Price feeds are deployer-owned mocks for both kinds, because Chainlink has no feeds on testnet.
 
 Requires Foundry, Node 20+ and pnpm.
 
@@ -89,7 +89,7 @@ For fast iteration, and for things testnet can't do, such as time travel:
 ./scripts/dev.sh            # anvil + deploy + ~5 weeks of simulated market history + app at :5173 on chain 31337
 ```
 
-In the app, **Connect wallet → Devnet personas** gives you Alice, Bob, Carol and Issuer as wallets. **Devnet** in the nav opens the issuer console, which adds time travel.
+In the app, **Connect wallet → Devnet personas** gives you Alice, Bob, Carol and Issuer as wallets. **Console** in the nav opens the issuer console, which adds time travel.
 
 ```sh
 cd contracts && forge test                                   # 64 tests: unit, fuzz, invariant, parity
