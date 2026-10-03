@@ -84,7 +84,13 @@ const groups: WalletList = [
 ]
 if (isDevnet) groups.push({ groupName: 'Devnet personas', wallets: PERSONAS.map(personaWallet) })
 
-const connectors = connectorsForWallets(groups, { appName: 'Xero', projectId: projectId ?? 'xero-devnet' })
+const connectors = connectorsForWallets(groups, {
+  appName: 'Xero',
+  appDescription: 'Keep the stock. Trade the dividends.',
+  appUrl: 'https://xeroprotocol.com',
+  appIcon: 'https://xeroprotocol.com/xero-icon-192.png',
+  projectId: projectId ?? 'xero-devnet',
+})
 
 export const wagmiConfig = createConfig({
   chains: [chain],

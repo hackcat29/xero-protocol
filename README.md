@@ -2,7 +2,7 @@
 
 **Keep the stock. Trade the dividends.**
 
-**Live on Robinhood Chain testnet: [xero.kiwiprotocol.workers.dev](https://xero.kiwiprotocol.workers.dev)**
+**Live on Robinhood Chain testnet: [xeroprotocol.com](https://xeroprotocol.com)**
 
 Robinhood Stock Tokens never pay cash dividends. Dividends are reinvested, and the token's on-chain `uiMultiplier()` grows: each token comes to represent more shares. Xero splits a Stock Token into two independently tradable claims:
 
@@ -70,7 +70,7 @@ cd app && pnpm dev                               # app on :5173 against testnet
 ./scripts/testnet-feeds.sh                       # every day or two: mock feeds go stale after 4 days
 ```
 
-The app deploys to Cloudflare Workers ([`app/wrangler.jsonc`](app/wrangler.jsonc)) from GitHub Actions on every push to `main`, after the contract, Stylus, keeper and app checks pass. CI needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets; to deploy by hand, run `cd app && pnpm build && npx wrangler deploy`.
+The app deploys to Cloudflare Workers ([`app/wrangler.jsonc`](app/wrangler.jsonc)) from GitHub Actions on every push to `main`, after the contract, Stylus, keeper and app checks pass. It serves `xeroprotocol.com` and `www.xeroprotocol.com`. CI needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets and reads `VITE_WALLETCONNECT_PROJECT_ID` from the repository variables; to deploy by hand, run `cd app && pnpm build && npx wrangler deploy`.
 
 Put the keystore password in `~/.foundry/xero-testnet.password` (chmod 600) to skip the prompts.
 
