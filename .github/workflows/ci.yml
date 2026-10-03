@@ -123,5 +123,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: app
+          # app/ has a pnpm lockfile, but this job only needs wrangler; npm ships with the runner
+          packageManager: npm
           wranglerVersion: '4'
           command: deploy --message "${{ github.sha }}"
