@@ -5,7 +5,7 @@ import { Logo } from './Brand'
 import { chain, isDemo, isDevnet, networks, switchNetwork } from '../lib/network'
 import { DevConsoleButton } from './DevConsole'
 
-export const REPO_URL = 'https://github.com/UncleTom29/xero-protocol'
+export const REPO_URL = 'https://github.com/hackcat29/xero-protocol'
 export const DOCS_URL = `${REPO_URL}#readme`
 
 /** Marketing header: product sections and a way into the app. No wallet or network chrome here. */

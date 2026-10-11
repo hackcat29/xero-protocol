@@ -6,9 +6,18 @@ contracts/broadcast/*/31337/
 # Rust / Stylus
 stylus/**/target/
 
+# Dependencies & Build artifacts
+node_modules/
+node_modules
+**/node_modules/
+**/node_modules
+dist/
+dist
+**/dist/
+**/dist
+*.watchman-cookie-*
+
 # Frontend
-app/node_modules/
-app/dist/
 app/src/lib/abis.json
 
 .anvil.log
@@ -17,7 +26,6 @@ app/src/lib/abis.json
 # Rehearsal outputs and test artefacts
 deploy/out/rehearsal-*
 app/smoke/
-services/keeper/node_modules/
 .env
 
 # Cloudflare
@@ -27,3 +35,7 @@ app/.wrangler/
 # Forge simulations and mainnet-fork rehearsals (commit a real mainnet broadcast deliberately with -f)
 contracts/broadcast/*/*/dry-run/
 contracts/broadcast/DeployProduction.s.sol/4663/
+
+# Multi-chain development (excluded from Arbitrum Singapore buildathon repository)
+base/
+bnb/
