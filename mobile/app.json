@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Xero Protocol",
+    "slug": "xero-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0B0D10",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "bundleIdentifier": "com.xeroprotocol.app",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.xeroprotocol.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0D10"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
