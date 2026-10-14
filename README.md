@@ -20,6 +20,7 @@ PT plus YT always equals the deposited token, and they recombine at any time. Ma
 | [`services/keeper/`](services/keeper/) | Reporter + keeper: attests Robinhood corporate actions from Robinhood's public API, maintains vaults |
 | [`app/`](app/) | Web app (React, wagmi, RainbowKit, TanStack Query, TradingView Lightweight Charts) |
 | [`deploy/`](deploy/) | Production config for Robinhood Chain mainnet, plus rehearsal outputs |
+| [`docs/`](docs/) | Official GitBook documentation for Base Mainnet & B20 tokenized stocks |
 | [`brand/`](brand/) | Logo, icons, social card, colour and type tokens |
 
 ---

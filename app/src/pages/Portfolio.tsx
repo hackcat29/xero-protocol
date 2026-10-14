@@ -5,7 +5,7 @@ import { WalletButton } from '../components/Nav'
 import { MarketIcon, TokenIcon } from '../components/TokenIcon'
 import { amount, date, pct, toNum, usd } from '../lib/format'
 import { abis } from '../lib/network'
-import { usePortfolio, useProtocol } from '../lib/protocol'
+import { usePortfolio, useProtocol, type Position } from '../lib/protocol'
 import { ACCOUNT_PLACEHOLDER, useTx } from '../lib/tx'
 
 export function Portfolio() {
@@ -26,7 +26,7 @@ export function Portfolio() {
     )
   }
 
-  const claimable = data?.positions.filter((p) => p.claimable > 0n) ?? []
+  const claimable = data?.positions.filter((p: Position) => p.claimable > 0n) ?? []
   const stockValue = protocol && data ? protocol.assets.reduce((a, s) => a + toNum(data.stocks[s.token] ?? 0n) * toNum(s.priceUsd), 0) : 0
 
   return (
@@ -34,7 +34,7 @@ export function Portfolio() {
       <header className="page-h">
         <div>
           <h1>Portfolio</h1>
-          <p className="sub">Your Xero positions and Stock Token balances.</p>
+          <p className="sub">Your Xero positions and Stock Token balances on Base.</p>
         </div>
         {claimable.length > 0 && (
           <button
@@ -43,7 +43,7 @@ export function Portfolio() {
             onClick={() =>
               run(
                 'Claim all yield',
-                claimable.map((p) => ({ address: p.market.vault, abi: abis.XeroVault, functionName: 'claimYield', args: [ACCOUNT_PLACEHOLDER], label: `Claim ${p.market.id}` })),
+                claimable.map((p: Position) => ({ address: p.market.vault, abi: abis.XeroVault, functionName: 'claimYield', args: [ACCOUNT_PLACEHOLDER], label: `Claim ${p.market.id}` })),
               )
             }
           >
@@ -83,7 +83,7 @@ export function Portfolio() {
                 </tr>
               </thead>
               <tbody>
-                {data.positions.map((p) => (
+                {data.positions.map((p: Position) => (
                   <tr key={p.market.vault}>
                     <td>
                       <div className="mkt">

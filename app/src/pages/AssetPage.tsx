@@ -8,7 +8,7 @@ import { MarketIcon } from '../components/TokenIcon'
 import { TradeTicket } from '../components/TradeTicket'
 import { WAD, amount, compactUsd, date, duration, pct, short, timeAgo, toNum, usd } from '../lib/format'
 import { explorer } from '../lib/network'
-import { usePortfolio, useProtocol, useTrades, type Asset, type Market } from '../lib/protocol'
+import { usePortfolio, useProtocol, useTrades, type Asset, type Market, type Trade, type Position } from '../lib/protocol'
 
 export function AssetPage() {
   const { symbol } = useParams()
@@ -110,8 +110,8 @@ export function AssetPage() {
 function ChartCard({ asset, market }: { asset: Asset; market: Market }) {
   const { data: trades } = useTrades(market.live ? market.market : undefined)
   const history: Point[] = useMemo(() => {
-    const pts = (trades ?? []).map((t) => ({ time: t.time, value: toNum((t.impliedRate * market.dividendIndex) / WAD) * 100 }))
-    return pts.length ? [...pts, { time: Math.max(...pts.map((p) => p.time)) + 1, value: toNum(market.impliedYield) * 100 }] : []
+    const pts = (trades ?? []).map((t: Trade) => ({ time: t.time, value: toNum((t.impliedRate * market.dividendIndex) / WAD) * 100 }))
+    return pts.length ? [...pts, { time: Math.max(...pts.map((p: Point) => p.time)) + 1, value: toNum(market.impliedYield) * 100 }] : []
   }, [trades, market])
   const live = asset.markets.filter((m) => m.live && m.tau > 0n)
   const curve: Point[] = live.map((m) => ({ time: Number(m.maturity), value: toNum(m.impliedYield) * 100 }))
@@ -167,7 +167,7 @@ function Trades({ asset, market }: { asset: Asset; market: Market }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((t) => (
+              {rows.map((t: Trade) => (
                 <tr key={t.hash + t.time}>
                   <td><span className={t.side === 'buy' ? 'up' : 'down'}>{t.side === 'buy' ? 'Buy' : 'Sell'}</span></td>
                   <td className="num">{amount(t.yt)}</td>
@@ -191,7 +191,7 @@ function PositionCard({ asset, market }: { asset: Asset; market: Market }) {
   const { address } = useAccount()
   const { data } = usePortfolio(address)
   if (!address) return null
-  const p = data?.positions.find((x) => x.market.vault === market.vault)
+  const p = data?.positions.find((x: Position) => x.market.vault === market.vault)
   return (
     <section className="card position">
       <h3>Your position</h3>

@@ -82,10 +82,10 @@ jobs:
       - name: Install
         working-directory: app
         run: pnpm install --frozen-lockfile
-      - name: Typecheck and build for Robinhood Chain testnet
+      - name: Typecheck and build for Base Sepolia
         working-directory: app
         env:
-          VITE_CHAIN_ID: '46630'
+          VITE_CHAIN_ID: '84532'
           VITE_WALLETCONNECT_PROJECT_ID: ${{ vars.VITE_WALLETCONNECT_PROJECT_ID }}
         run: pnpm build
       - uses: actions/upload-artifact@v7

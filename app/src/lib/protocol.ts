@@ -3,7 +3,7 @@ import { zeroAddress, type Address } from 'viem'
 import { abis, book, chainId, isDevnet, publicClient, read } from './network'
 import { WAD, toNum } from './format'
 
-const REFRESH = isDevnet ? 4_000 : 12_000
+const REFRESH = isDevnet ? 4_000 : 10_000
 
 // ------------------------------------------------------------------ types
 
@@ -30,7 +30,7 @@ export type LensPoint = {
   reserveQuote: bigint
 }
 
-export type Market = LensPoint & {
+export type B20Market = LensPoint & {
   id: string // `${symbol}-${label}`
   label: string
   symbol: string
@@ -38,16 +38,16 @@ export type Market = LensPoint & {
   token: Address
   ptSymbol: string
   ytSymbol: string
-  /** Stock Tokens one unit is worth today (PT + YT). */
-  parValue: bigint
   liquidityUsd: number
   tvlUsd: number
-  /** PT's annualised return, in shares, if bought now and held to maturity. */
   ptFixedYield: number
+  ptDiscountPct: number
+  ytLeverage: number
   live: boolean
+  parValue: bigint
 }
 
-export type Asset = {
+export type B20Asset = {
   token: Address
   symbol: string
   name: string
@@ -56,16 +56,20 @@ export type Asset = {
   sharePriceUsd: bigint // per underlying share
   priceFresh: boolean
   forwards: bigint[]
-  markets: Market[]
+  markets: B20Market[]
   tvlUsd: number
   liquidityUsd: number
   bestYield: number
+  maxPtDiscount: number
 }
+
+export type Asset = B20Asset
+export type Market = B20Market
 
 export type Protocol = {
   now: number
-  assets: Asset[]
-  markets: Market[]
+  assets: B20Asset[]
+  markets: B20Market[]
   tvlUsd: number
   liquidityUsd: number
 }
@@ -91,70 +95,104 @@ async function loadProtocol(): Promise<Protocol> {
       ),
     ),
   ])
-  const symbolsOf = async (p: LensPoint) =>
-    Promise.all([
-      read<string>(p.principalToken, abis.XeroComponentToken, 'symbol'),
-      read<string>(p.yieldToken, abis.XeroComponentToken, 'symbol'),
-    ])
 
-  const assets: Asset[] = await Promise.all(
-    curves.map(async (c) => {
-      const price = c.priceFresh ? toNum(c.priceUsd) : 0
-      const markets = await Promise.all(
-        c.points.map(async (p): Promise<Market> => {
-          const [ptSymbol, ytSymbol] = await symbolsOf(p)
-          const label = ytSymbol.split('-YT-')[1] ?? ''
-          const parValue = p.ptPrice + p.ytPrice
-          const liquidityUsd = toNum(p.reserveQuote) * price + toNum(p.reserveYt) * toNum(p.ytPrice) * price
-          const tvlUsd = toNum(p.totalUnits) * toNum(parValue) * price
-          const tau = toNum(p.tau)
-          const ptFixedYield = p.ptPrice > 0n && tau > 0 ? Math.pow(toNum(parValue) / toNum(p.ptPrice), 1 / tau) - 1 : 0
-          return {
-            ...p,
-            id: `${c.symbol}-${label}`,
-            label,
-            symbol: c.symbol,
-            assetName: c.name,
-            token: c.token,
-            ptSymbol,
-            ytSymbol,
-            parValue,
-            liquidityUsd,
-            tvlUsd,
-            ptFixedYield,
-            live: !p.matured && p.market !== zeroAddress && p.reserveYt > 0n,
-          }
-        }),
-      )
-      const live = markets.filter((m) => m.live)
-      return {
-        token: c.token,
+  const now = Number(block.timestamp)
+  const allMarkets: B20Market[] = []
+
+  const assets: B20Asset[] = curves.map((c) => {
+    const rawPriceUsd = toNum(c.priceUsd)
+    const sharePrice = c.multiplier > 0n ? (c.priceUsd * WAD) / c.multiplier : c.priceUsd
+
+    const markets: B20Market[] = c.points.map((p) => {
+      const remainingSecs = Math.max(0, Number(p.maturity) - now)
+      const label = remainingSecs <= 8 * 86400 ? '1W' : remainingSecs <= 95 * 86400 ? '3M' : remainingSecs <= 185 * 86400 ? '6M' : '1Y'
+      const id = `${c.symbol}-${label}`
+
+      // PT Fixed Yield & Discount calculation
+      const ptPrice = toNum(p.ptPriceUsd)
+      const spotPrice = rawPriceUsd
+      const discountUsd = Math.max(0, spotPrice - ptPrice)
+      const ptDiscountPct = spotPrice > 0 ? (discountUsd / spotPrice) * 100 : 0
+      const years = Math.max(remainingSecs, 1) / (365 * 86400)
+      const ptFixedYield = ptPrice > 0 && years > 0 ? (discountUsd / ptPrice / years) * 100 : toNum(p.impliedYield) * 100
+
+      // YT Leverage: Spot Price / YT Price
+      const ytPrice = toNum(p.ytPriceUsd)
+      const ytLeverage = ytPrice > 0 ? Math.min(250, spotPrice / ytPrice) : 50
+
+      const ptSymbol = `x${c.symbol}-PT-${label}`
+      const ytSymbol = `x${c.symbol}-YT-${label}`
+
+      const reserveYtUnits = toNum(p.reserveYt)
+      const reserveStock = toNum(p.reserveQuote)
+      const liquidityUsd = (reserveYtUnits * ytPrice) + (reserveStock * rawPriceUsd)
+      const tvlUsd = toNum(p.totalUnits) * rawPriceUsd
+
+      const parValue = p.ptPrice + p.ytPrice > 0n ? p.ptPrice + p.ytPrice : WAD
+
+      const m: B20Market = {
+        ...p,
+        id,
+        label,
         symbol: c.symbol,
-        name: c.name.replace(/\s*\((Mock )?Stock Token\)\s*$/i, ''),
-        multiplier: c.multiplier,
-        priceUsd: c.priceUsd,
-        sharePriceUsd: c.multiplier > 0n ? (c.priceUsd * WAD) / c.multiplier : 0n,
-        priceFresh: c.priceFresh,
-        forwards: [...c.forwards],
-        markets,
-        tvlUsd: markets.reduce((a, m) => a + m.tvlUsd, 0),
-        liquidityUsd: markets.reduce((a, m) => a + m.liquidityUsd, 0),
-        bestYield: Math.max(0, ...live.map((m) => toNum(m.impliedYield))),
+        assetName: c.name,
+        token: c.token,
+        ptSymbol,
+        ytSymbol,
+        liquidityUsd,
+        tvlUsd,
+        ptFixedYield,
+        ptDiscountPct,
+        ytLeverage,
+        live: !p.matured && p.market !== zeroAddress,
+        parValue,
       }
-    }),
-  )
-  const markets = assets.flatMap((a) => a.markets)
+      allMarkets.push(m)
+      return m
+    })
+
+    const tvlUsd = markets.reduce((acc, m) => acc + m.tvlUsd, 0)
+    const liquidityUsd = markets.reduce((acc, m) => acc + m.liquidityUsd, 0)
+    const bestYield = markets.reduce((acc, m) => Math.max(acc, toNum(m.impliedYield)), 0)
+    const maxPtDiscount = markets.reduce((acc, m) => Math.max(acc, m.ptDiscountPct), 0)
+
+    return {
+      token: c.token,
+      symbol: c.symbol,
+      name: c.name,
+      multiplier: c.multiplier,
+      priceUsd: c.priceUsd,
+      sharePriceUsd: sharePrice,
+      priceFresh: c.priceFresh,
+      forwards: [...c.forwards],
+      markets,
+      tvlUsd,
+      liquidityUsd,
+      bestYield,
+      maxPtDiscount,
+    }
+  })
+
+  const tvlUsd = assets.reduce((acc, a) => acc + a.tvlUsd, 0)
+  const liquidityUsd = assets.reduce((acc, a) => acc + a.liquidityUsd, 0)
+
   return {
-    now: Number(block.timestamp),
+    now,
     assets,
-    markets,
-    tvlUsd: assets.reduce((a, x) => a + x.tvlUsd, 0),
-    liquidityUsd: assets.reduce((a, x) => a + x.liquidityUsd, 0),
+    markets: allMarkets,
+    tvlUsd,
+    liquidityUsd,
   }
 }
 
 export function useProtocol() {
-  return useQuery({ queryKey: ['protocol', chainId], queryFn: loadProtocol, refetchInterval: REFRESH, enabled: !!book })
+  return useQuery({
+    queryKey: ['xero', 'base', chainId, book?.deployer],
+    queryFn: loadProtocol,
+    refetchInterval: REFRESH,
+    staleTime: REFRESH / 2,
+    enabled: !!book,
+  })
 }
 
 // ------------------------------------------------------------------ positions
@@ -177,7 +215,7 @@ export type Portfolio = {
 
 async function loadPortfolio(account: Address, p: Protocol): Promise<Portfolio> {
   const stockBalances = await Promise.all(
-    p.assets.map((a) => read<bigint>(a.token, abis.XeroComponentToken, 'balanceOf', [account])),
+    p.assets.map((a) => read<bigint>(a.token, abis.MockStockToken, 'balanceOf', [account])),
   )
   const positions = await Promise.all(
     p.markets.map(async (m): Promise<Position> => {
@@ -185,7 +223,6 @@ async function loadPortfolio(account: Address, p: Protocol): Promise<Portfolio> 
         read<bigint>(m.principalToken, abis.XeroComponentToken, 'balanceOf', [account]),
         read<bigint>(m.yieldToken, abis.XeroComponentToken, 'balanceOf', [account]),
         m.market === zeroAddress ? 0n : read<bigint>(m.market, abis.XeroYieldMarket, 'balanceOf', [account]),
-        // Static call of claimYield syncs the vault first, so this is the exact claimable amount.
         publicClient
           .simulateContract({ account, address: m.vault, abi: abis.XeroVault, functionName: 'claimYield', args: [account] })
           .then((r) => r.result as bigint)
@@ -220,7 +257,7 @@ async function loadPortfolio(account: Address, p: Protocol): Promise<Portfolio> 
 export function usePortfolio(account: Address | undefined) {
   const { data: protocol } = useProtocol()
   return useQuery({
-    queryKey: ['portfolio', chainId, account, protocol?.now],
+    queryKey: ['portfolio', 'base', chainId, account, protocol?.now],
     queryFn: () => loadPortfolio(account!, protocol!),
     enabled: !!account && !!protocol,
     placeholderData: (prev) => prev,
@@ -243,18 +280,53 @@ const swapEvent = (abis.XeroYieldMarket as readonly { type: string; name?: strin
   (x) => x.type === 'event' && x.name === 'Swap',
 )
 
+// Public RPCs cap eth_getLogs ranges (sepolia.base.org: 200 blocks, PublicNode: 50k), and Base makes a block
+// every 2s. So history is scanned backwards in chunks, bounded by a lookback window and a trade count, and each
+// market remembers how far it has scanned so refetches only ask for new blocks.
+const LOOKBACK_BLOCKS = isDevnet ? 10n ** 12n : 302_400n // ~7 days of Base blocks
+const MAX_TRADES = 60
+let logRange = 50_000n
+type SwapLog = Awaited<ReturnType<typeof getSwapLogs>>[number]
+const scanned = new Map<Address, { to: bigint; logs: SwapLog[] }>()
+const blocks = new Map<bigint, number>() // block number -> timestamp
+
+function getSwapLogs(market: Address, fromBlock: bigint, toBlock: bigint) {
+  return publicClient.getContractEvents({ address: market, abi: abis.XeroYieldMarket, eventName: 'Swap', fromBlock, toBlock })
+}
+
+async function swapLogsBetween(market: Address, from: bigint, to: bigint, newestFirst: SwapLog[], limit: number) {
+  let hi = to
+  while (hi >= from && newestFirst.length < limit) {
+    const lo = hi - logRange + 1n > from ? hi - logRange + 1n : from
+    try {
+      const chunk = await getSwapLogs(market, lo, hi)
+      newestFirst.push(...chunk.reverse())
+      hi = lo - 1n
+    } catch (e) {
+      if (logRange <= 100n) throw e
+      logRange /= 2n // provider rejected the range: narrow it and retry
+    }
+  }
+  return newestFirst
+}
+
 async function loadTrades(market: Address): Promise<Trade[]> {
-  const logs = await publicClient.getContractEvents({
-    address: market,
-    abi: abis.XeroYieldMarket,
-    eventName: 'Swap',
-    fromBlock: BigInt(book?.startBlock ?? 0),
-  })
-  const blocks = new Map<bigint, number>()
+  const head = await publicClient.getBlockNumber()
+  const start = BigInt(book?.startBlock ?? 0)
+  const prev = scanned.get(market)
+  let logs: SwapLog[]
+  if (prev) {
+    const fresh = prev.to < head ? await swapLogsBetween(market, prev.to + 1n, head, [], Infinity) : []
+    logs = [...fresh, ...prev.logs].slice(0, MAX_TRADES)
+  } else {
+    const floor = head - LOOKBACK_BLOCKS > start ? head - LOOKBACK_BLOCKS : start
+    logs = await swapLogsBetween(market, floor, head, [], MAX_TRADES)
+  }
+  scanned.set(market, { to: head, logs })
   await Promise.all(
-    [...new Set(logs.map((l) => l.blockNumber!))].map(async (n) =>
-      blocks.set(n, Number((await publicClient.getBlock({ blockNumber: n })).timestamp)),
-    ),
+    [...new Set(logs.map((l) => l.blockNumber!))]
+      .filter((n) => !blocks.has(n))
+      .map(async (n) => blocks.set(n, Number((await publicClient.getBlock({ blockNumber: n })).timestamp))),
   )
   return logs
     .map((l) => {
@@ -275,7 +347,7 @@ async function loadTrades(market: Address): Promise<Trade[]> {
 
 export function useTrades(market: Address | undefined) {
   return useQuery({
-    queryKey: ['trades', chainId, market],
+    queryKey: ['trades', 'base', chainId, market],
     queryFn: () => loadTrades(market!),
     enabled: !!market && market !== zeroAddress && !!swapEvent,
     refetchInterval: REFRESH * 2,

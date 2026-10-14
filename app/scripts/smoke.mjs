@@ -11,7 +11,7 @@ mkdirSync(OUT, { recursive: true })
 const pages = [
   { path: '/', wait: '.kpi b', name: 'landing', height: 3800 },
   { path: '/markets', wait: '.markets-table tbody tr', name: 'markets', height: 1400 },
-  { path: '/markets/SCHD?m=1Y', wait: '.ticket .amount', name: 'asset', height: 1900 },
+  { path: '/markets/SCHDc?m=1Y', wait: '.ticket .amount', name: 'asset', height: 1900 },
   { path: '/portfolio', wait: '.empty-state, .kpis', name: 'portfolio', height: 900 },
 ]
 

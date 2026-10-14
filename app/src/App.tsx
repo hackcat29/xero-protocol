@@ -11,22 +11,33 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { Landing } from './pages/Landing'
 import { Markets } from './pages/Markets'
 import { AssetPage } from './pages/AssetPage'
+import { StripVault } from './pages/StripVault'
+import { DiscountedStock } from './pages/DiscountedStock'
+import { DividendSpeculation } from './pages/DividendSpeculation'
+import { Architecture } from './pages/Architecture'
 import { Portfolio } from './pages/Portfolio'
 import { book, chain } from './lib/network'
 import { wagmiConfig } from './lib/wagmi'
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: true, retry: 1 } } })
 
-const rkTheme = darkTheme({ accentColor: '#F5B229', accentColorForeground: '#0B0D10', borderRadius: 'medium', fontStack: 'system', overlayBlur: 'small' })
-rkTheme.colors.modalBackground = '#14171C'
-rkTheme.colors.modalBorder = '#2A313A'
+// Base Blue Dark Theme
+const rkTheme = darkTheme({
+  accentColor: '#0052FF',
+  accentColorForeground: '#FFFFFF',
+  borderRadius: 'medium',
+  fontStack: 'system',
+  overlayBlur: 'small',
+})
+rkTheme.colors.modalBackground = '#0A0B0D'
+rkTheme.colors.modalBorder = '#1C222D'
 rkTheme.fonts.body = 'Geist, Inter, system-ui, sans-serif'
 
 export default function App() {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={rkTheme} modalSize="compact" appInfo={{ appName: 'Xero', disclaimer: Disclaimer }}>
+        <RainbowKitProvider theme={rkTheme} modalSize="compact" appInfo={{ appName: 'Xero on Base', disclaimer: Disclaimer }}>
           <Tooltip.Provider>
             <BrowserRouter>
               <Routes>
@@ -34,6 +45,10 @@ export default function App() {
                   <Route index element={<Landing />} />
                   <Route path="markets" element={<Gate><Markets /></Gate>} />
                   <Route path="markets/:symbol" element={<Gate><AssetPage /></Gate>} />
+                  <Route path="strip" element={<Gate><StripVault /></Gate>} />
+                  <Route path="discount" element={<Gate><DiscountedStock /></Gate>} />
+                  <Route path="speculate" element={<Gate><DividendSpeculation /></Gate>} />
+                  <Route path="architecture" element={<Architecture />} />
                   <Route path="portfolio" element={<Gate><Portfolio /></Gate>} />
                   <Route path="*" element={<NotFound />} />
                 </Route>
@@ -72,8 +87,9 @@ function Gate({ children }: { children: React.ReactNode }) {
   return (
     <div className="page">
       <div className="card empty-state">
-        <h3>Xero is launching on {chain.name}</h3>
-        <p className="sub">Markets open once the protocol is deployed and governance is handed to the timelock.</p>
+        <span className="base-tag">BASE</span>
+        <h3>Xero is deploying on {chain.name}</h3>
+        <p className="sub">Coinbase B20 tokenized stock markets open as deployment contracts finalize.</p>
         <Link to="/" className="btn">Back home</Link>
       </div>
     </div>
@@ -85,12 +101,15 @@ function NotFound() {
     <div className="page">
       <div className="card empty-state">
         <h3>Page not found</h3>
-        <Link to="/markets" className="btn btn-primary">Go to markets</Link>
+        <p className="sub">The requested B20 terminal does not exist.</p>
+        <Link to="/markets" className="btn btn-primary">Go to Markets</Link>
       </div>
     </div>
   )
 }
 
 const Disclaimer = ({ Text }: { Text: React.ComponentType<{ children: React.ReactNode }>; Link: unknown }) => (
-  <Text>Xero is non-custodial and independent of Robinhood. Yield Tokens depend on future dividends, which are not guaranteed.</Text>
+  <Text>
+    Xero Protocol is non-custodial and built on Base. Yield Tokens deconstruct the Coinbase B20 Multiplier; future corporate dividend declarations depend on equity issuer action.
+  </Text>
 )

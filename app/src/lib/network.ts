@@ -1,36 +1,27 @@
 import { createPublicClient, defineChain, http, type Abi, type Address, type Chain, type PublicClient } from 'viem'
 import abisJson from './abis.json'
 
-export const robinhoodChain = defineChain({
-  id: 4663,
-  name: 'Robinhood Chain',
+export const baseMainnet = defineChain({
+  id: 8453,
+  name: 'Base',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-  rpcUrls: { default: { http: [import.meta.env.VITE_ROBINHOOD_RPC ?? 'https://rpc.mainnet.chain.robinhood.com'] } },
-  blockExplorers: { default: { name: 'Robinhood Chain Explorer', url: 'https://robin.etherscan.io' } },
+  rpcUrls: { default: { http: [import.meta.env.VITE_BASE_RPC ?? 'https://mainnet.base.org'] } },
+  blockExplorers: { default: { name: 'BaseScan', url: 'https://basescan.org' } },
 })
 
-export const robinhoodTestnet = defineChain({
-  id: 46630,
-  name: 'Robinhood Chain Testnet',
-  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-  rpcUrls: { default: { http: [import.meta.env.VITE_ROBINHOOD_TESTNET_RPC ?? 'https://rpc.testnet.chain.robinhood.com/rpc'] } },
-  blockExplorers: { default: { name: 'Robinhood Testnet Explorer', url: 'https://explorer.testnet.chain.robinhood.com' } },
-  testnet: true,
-})
-
-export const arbitrumSepolia = defineChain({
-  id: 421614,
-  name: 'Arbitrum Sepolia',
-  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-  rpcUrls: { default: { http: [import.meta.env.VITE_ARBITRUM_SEPOLIA_RPC ?? 'https://sepolia-rollup.arbitrum.io/rpc'] } },
-  blockExplorers: { default: { name: 'Arbiscan', url: 'https://sepolia.arbiscan.io' } },
+export const baseSepolia = defineChain({
+  id: 84532,
+  name: 'Base Sepolia',
+  nativeCurrency: { name: 'Sepolia Ether', symbol: 'ETH', decimals: 18 },
+  rpcUrls: { default: { http: [import.meta.env.VITE_BASE_SEPOLIA_RPC ?? 'https://base-sepolia-rpc.publicnode.com'] } },
+  blockExplorers: { default: { name: 'BaseScan Sepolia', url: 'https://sepolia.basescan.org' } },
   testnet: true,
 })
 
 export const localChain = defineChain({
   id: 31337,
-  name: 'Local devnet',
-  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  name: 'Base Local Devnet',
+  nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
   rpcUrls: { default: { http: [import.meta.env.VITE_LOCAL_RPC ?? 'http://127.0.0.1:8545'] } },
 })
 
@@ -38,7 +29,7 @@ export type AddressBook = {
   chainId: number
   startBlock?: number
   deployer: Address
-  usdg: Address
+  usdc: Address
   guardian: Address
   engine: Address
   factory: Address
@@ -46,12 +37,11 @@ export type AddressBook = {
   markets: Address
   oracle: Address
   lens: Address
+  baseLens?: Address
   router: Address
   stocks: Address[]
   feeds?: Address[]
   actors?: Address[]
-  /** Robinhood-issued Stock Tokens (testnet): no mock faucet or issuer controls. */
-  realStocks?: Address[]
 }
 
 const books = Object.fromEntries(
@@ -61,19 +51,19 @@ const books = Object.fromEntries(
 ) as Record<number, AddressBook>
 
 const CHAINS: Record<number, Chain> = {
-  4663: robinhoodChain,
-  46630: robinhoodTestnet,
-  421614: arbitrumSepolia,
+  8453: baseMainnet,
+  84532: baseSepolia,
   31337: localChain,
 }
-/** Short names for `?chain=` links, e.g. https://xeroprotocol.com/markets?chain=arbitrum-sepolia */
-const SLUGS: Record<string, number> = { 'robinhood-testnet': 46630, 'arbitrum-sepolia': 421614, robinhood: 4663, local: 31337 }
-const TESTNETS = [46630, 421614]
 
-/** Build-time default network: VITE_CHAIN_ID, else Robinhood Chain testnet. Mainnet builds set 4663, `scripts/dev.sh` 31337. */
-const DEFAULT_CHAIN_ID = Number(import.meta.env.VITE_CHAIN_ID ?? 46630)
+const SLUGS: Record<string, number> = {
+  'base': 8453,
+  'base-sepolia': 84532,
+  'local': 31337,
+}
 
-/** Networks a visitor can choose between: every deployment shipped in this build. A local-devnet build is pinned to it. */
+const DEFAULT_CHAIN_ID = Number(import.meta.env.VITE_CHAIN_ID ?? 84532)
+
 export const networks: Chain[] =
   DEFAULT_CHAIN_ID === 31337
     ? [localChain]
@@ -81,10 +71,9 @@ export const networks: Chain[] =
         .map((id) => CHAINS[id])
         .filter((c): c is Chain => !!c)
 
-const STORAGE_KEY = 'xero.chainId'
+const STORAGE_KEY = 'xero.base.chainId'
 const selectable = (id: number) => networks.some((n) => n.id === id)
 
-/** `?chain=` in the URL wins (and is remembered), then the visitor's last choice, then the build default. */
 function pickChainId(): number {
   try {
     const q = new URLSearchParams(window.location.search).get('chain')
@@ -100,17 +89,15 @@ function pickChainId(): number {
 }
 
 export const chainId: number = pickChainId()
-export const chain: Chain = CHAINS[chainId] ?? robinhoodTestnet
-export const book: AddressBook | undefined = books[chainId]
-export const isDevnet = chainId === 31337
-export const isTestnet = TESTNETS.includes(chainId)
-/** Networks running the demo deployment (mock Stock Tokens with issuer controls and a faucet). */
-export const isDemo = isDevnet || isTestnet
+export const chain: Chain = CHAINS[chainId] ?? baseSepolia
+export const book: AddressBook | undefined = books[chainId] ?? books[84532] ?? (Object.values(books)[0] as AddressBook)
+export const isDevnet: boolean = chainId === 31337
+export const isTestnet: boolean = chainId === 84532
+export const isDemo: boolean = isDevnet || isTestnet
 export const explorer = chain.blockExplorers?.default.url
-export const ROBINHOOD_FAUCET = 'https://faucet.testnet.chain.robinhood.com'
-export const isRealStock = (token: Address) => !!book?.realStocks?.some((t) => t.toLowerCase() === token.toLowerCase())
+export const BASE_FAUCET_URL = 'https://www.coinbase.com/faucets/base-ethereum-sepolia-faucet'
+export const isRealStock = (_token?: Address): boolean => false
 
-/** Remembers the choice and reloads: chain, address book, clients and wallet config are all fixed at startup. */
 export function switchNetwork(id: number) {
   if (id === chainId || !selectable(id)) return
   try {
@@ -137,7 +124,9 @@ export const abis = abisJson as unknown as Record<
   | 'XeroOracle'
   | 'MockStockToken'
   | 'MockAggregator'
-  | 'MockUSDG',
+  | 'MockUSDG'
+  | 'MockB20StockToken'
+  | 'BaseB20YieldLens',
   Abi
 >
 

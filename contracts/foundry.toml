@@ -30,3 +30,11 @@ line_length = 110
 
 [lint]
 lint_on_build = false
+
+[rpc_endpoints]
+base = "${BASE_RPC_URL:-https://mainnet.base.org}"
+base_sepolia = "${BASE_SEPOLIA_RPC_URL:-https://sepolia.base.org}"
+
+[etherscan]
+base = { key = "${BASESCAN_API_KEY}", url = "https://api.basescan.org/api" }
+base_sepolia = { key = "${BASESCAN_API_KEY}", url = "https://api-sepolia.basescan.org/api" }

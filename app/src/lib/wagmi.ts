@@ -14,15 +14,14 @@ import { chain, isDevnet } from './network'
 
 const projectId: string | undefined = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID
 
-/** Devnet personas: anvil's unlocked dev accounts, exposed as wallets inside the connect modal. */
 export const PERSONAS: { name: string; blurb: string; address: Address; issuer?: boolean }[] = [
-  { name: 'Alice', blurb: 'Holds stock, sells her future dividends', address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' },
-  { name: 'Bob', blurb: 'Buys dividend yield without price risk', address: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC' },
-  { name: 'Carol', blurb: 'Trades the dividend curve', address: '0x90F79bf6EB2c4f870365E785982E1f101E93b906' },
-  { name: 'Issuer', blurb: 'Reinvests dividends, splits, attests', address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', issuer: true },
+  { name: 'Alice', blurb: 'Fixed Yield Sourcer · Strips B20 & sells YT for upfront cash', address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' },
+  { name: 'Bob', blurb: 'Dividend Speculator · Buys YT with 50x-120x cash flow leverage', address: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC' },
+  { name: 'Charlie', blurb: 'Discounted Buyer · Buys PT at a discount, redeems at maturity', address: '0x90F79bf6EB2c4f870365E785982E1f101E93b906' },
+  { name: 'Coinbase Issuer', blurb: 'Coinbase B20 Issuer · Multiplier updates, DRIP dividends & splits', address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', issuer: true },
 ]
 
-const PERSONA_KEY = 'xero.devnetPersona'
+const PERSONA_KEY = 'xero.base.devnetPersona'
 
 const personaIcon = (letter: string, bg: string, fg: string) =>
   `data:image/svg+xml;utf8,${encodeURIComponent(
@@ -33,15 +32,13 @@ function personaWallet(p: (typeof PERSONAS)[number]): () => Wallet {
   return () => ({
     id: `devnet-${p.name.toLowerCase()}`,
     name: `${p.name} · devnet`,
-    iconUrl: personaIcon(p.name[0], p.issuer ? '#F5B229' : '#1D2229', p.issuer ? '#0B0D10' : '#F4F2EC'),
-    iconBackground: '#0B0D10',
+    iconUrl: personaIcon(p.name[0], p.issuer ? '#0052FF' : '#181E25', '#F4F2EC'),
+    iconBackground: '#0B0E11',
     installed: true,
     createConnector: (details) =>
       createConnector((config) => {
         const id = `devnet-${p.name.toLowerCase()}`
         const base = mock({ accounts: [p.address], features: { reconnect: true } })(config)
-        // wagmi's mock connector keeps "connected" in memory only; remember the persona so a page
-        // reload restores the session like a real injected wallet would.
         const remember = (v: string | null) => {
           try {
             if (v) localStorage.setItem(PERSONA_KEY, v)
@@ -76,20 +73,20 @@ function personaWallet(p: (typeof PERSONAS)[number]): () => Wallet {
 
 const groups: WalletList = [
   {
-    groupName: 'Recommended',
+    groupName: 'Base & Recommended',
     wallets: projectId
-      ? [metaMaskWallet, rabbyWallet, coinbaseWallet, rainbowWallet, walletConnectWallet, injectedWallet]
-      : [injectedWallet, rabbyWallet],
+      ? [coinbaseWallet, metaMaskWallet, rabbyWallet, rainbowWallet, walletConnectWallet, injectedWallet]
+      : [coinbaseWallet, injectedWallet, metaMaskWallet, rabbyWallet],
   },
 ]
-if (isDevnet) groups.push({ groupName: 'Devnet personas', wallets: PERSONAS.map(personaWallet) })
+if (isDevnet) groups.push({ groupName: 'Base Testnet Personas', wallets: PERSONAS.map(personaWallet) })
 
 const connectors = connectorsForWallets(groups, {
-  appName: 'Xero',
-  appDescription: 'Keep the stock. Trade the dividends.',
+  appName: 'Xero Protocol · Base Edition',
+  appDescription: 'Automated Yield-Stripping for Coinbase B20 Tokenized Stocks on Base',
   appUrl: 'https://xeroprotocol.com',
   appIcon: 'https://xeroprotocol.com/xero-icon-192.png',
-  projectId: projectId ?? 'xero-devnet',
+  projectId: projectId ?? 'xero-base-core',
 })
 
 export const wagmiConfig = createConfig({

@@ -8,30 +8,31 @@ import { DevConsoleButton } from './DevConsole'
 export const REPO_URL = 'https://github.com/hackcat29/xero-protocol'
 export const DOCS_URL = `${REPO_URL}#readme`
 
-/** Marketing header: product sections and a way into the app. No wallet or network chrome here. */
+/** Marketing header: product sections and a way into the app. */
 export function SiteNav() {
   return (
     <header className="nav nav-site">
       <div className="nav-inner">
         <Logo />
         <nav className="site-links" aria-label="Site">
-          <a href="#product">Product</a>
-          <a href="#use-cases">Use cases</a>
-          <a href="#security">Security</a>
+          <a href="#product">B20 Yield Stripping</a>
+          <a href="#pillars">3 Pillars</a>
+          <NavLink to="/architecture">Architecture</NavLink>
+          <NavLink to="/markets">Markets</NavLink>
           <a href={DOCS_URL} target="_blank" rel="noreferrer">Docs</a>
         </nav>
         <div className="nav-right">
           <a className="icon-link" href={REPO_URL} target="_blank" rel="noreferrer" aria-label="Xero on GitHub" title="GitHub">
             <GitHubIcon />
           </a>
-          <Link to="/markets" className="btn btn-primary">Launch app</Link>
+          <Link to="/markets" className="btn btn-primary">Launch App</Link>
         </div>
       </div>
     </header>
   )
 }
 
-/** App header: the app's sections sit with the network and wallet they act on. */
+/** App header: complete suite of Base yield-stripping tools */
 export function AppNav() {
   return (
     <>
@@ -41,7 +42,11 @@ export function AppNav() {
           <div className="nav-right">
             <nav className="app-tabs" aria-label="App">
               <NavLink to="/markets"><MarketsIcon />Markets</NavLink>
+              <NavLink to="/strip"><StripIcon />Strip Vault</NavLink>
+              <NavLink to="/discount"><DiscountIcon />Discount PT</NavLink>
+              <NavLink to="/speculate"><SpeculateIcon />Speculate YT</NavLink>
               <NavLink to="/portfolio"><PortfolioIcon />Portfolio</NavLink>
+              <NavLink to="/architecture"><ArchitectureIcon />Architecture</NavLink>
             </nav>
             <span className="nav-sep" aria-hidden="true" />
             {isDemo && <DevConsoleButton />}
@@ -50,15 +55,18 @@ export function AppNav() {
           </div>
         </div>
       </header>
-      <nav className="tabbar" aria-label="App">
+      <nav className="tabbar" aria-label="Mobile Navigation">
         <NavLink to="/markets"><MarketsIcon />Markets</NavLink>
+        <NavLink to="/strip"><StripIcon />Strip</NavLink>
+        <NavLink to="/discount"><DiscountIcon />Discount</NavLink>
+        <NavLink to="/speculate"><SpeculateIcon />Speculate</NavLink>
         <NavLink to="/portfolio"><PortfolioIcon />Portfolio</NavLink>
       </nav>
     </>
   )
 }
 
-/** The network the app is reading and trading on. With several deployments it is a menu; reselecting reloads the app. */
+/** Network selector configured for Base chains */
 function NetworkSwitch() {
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
@@ -74,7 +82,7 @@ function NetworkSwitch() {
     }
   }, [open])
 
-  const dot = <i className={isDevnet ? 'dot dot-dev' : 'dot'} />
+  const dot = <i className={isDevnet ? 'dot dot-dev' : 'dot dot-base'} />
   if (networks.length < 2) {
     return (
       <span className="chain-pill" title={`Network: ${chain.name}`}>
@@ -85,17 +93,28 @@ function NetworkSwitch() {
   }
   return (
     <div className="net" ref={root}>
-      <button className="chain-pill chain-pill-btn" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((o) => !o)} title="Switch network">
+      <button
+        className="chain-pill chain-pill-btn"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        title="Switch network"
+      >
         {dot}
         <span className="net-name">{chain.name}</span>
-        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3.5l3 3 3-3" /></svg>
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M2 3.5l3 3 3-3" />
+        </svg>
       </button>
       {open && (
         <ul className="net-menu" role="listbox" aria-label="Network">
           {networks.map((n) => (
             <li key={n.id} role="option" aria-selected={n.id === chain.id}>
               <button onClick={() => switchNetwork(n.id)}>
-                <span>{n.name}</span>
+                <span className="menu-network-row">
+                  <i className={n.id === 31337 ? 'dot dot-dev' : 'dot dot-base'} />
+                  {n.name}
+                </span>
                 {n.id === chain.id && <b aria-hidden="true">✓</b>}
               </button>
             </li>
@@ -114,20 +133,20 @@ export function WalletButton({ block = false }: { block?: boolean }) {
         if (!account) {
           return (
             <button className={`btn btn-primary ${block ? 'btn-block' : ''}`} onClick={openConnectModal}>
-              Connect wallet
+              Connect<span className="label-wide">Wallet</span>
             </button>
           )
         }
         if (c?.unsupported) {
           return (
             <button className={`btn btn-danger ${block ? 'btn-block' : ''}`} onClick={openChainModal}>
-              Switch network
+              Switch Network
             </button>
           )
         }
         return (
           <button className={`btn btn-account ${block ? 'btn-block' : ''}`} onClick={openAccountModal}>
-            <span className="avatar" style={{ background: `hsl(${parseInt(account.address.slice(2, 6), 16) % 360} 40% 45%)` }} />
+            <span className="avatar" style={{ background: `hsl(${parseInt(account.address.slice(2, 6), 16) % 360} 55% 45%)` }} />
             {account.displayName}
           </button>
         )
@@ -136,6 +155,8 @@ export function WalletButton({ block = false }: { block?: boolean }) {
   )
 }
 
+// ------------------------------------------------------------------ Icons
+
 const MarketsIcon = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M2 12.5l3.5-4 3 2.5L14 4" />
@@ -143,10 +164,38 @@ const MarketsIcon = () => (
   </svg>
 )
 
+const StripIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 4h10M3 8h10M3 12h6" />
+    <circle cx="12" cy="11.5" r="1.5" />
+  </svg>
+)
+
+const DiscountIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M13.5 8.5L8.5 13.5 2.5 7.5V2.5h5l6 6z" />
+    <circle cx="5" cy="5" r="1" fill="currentColor" />
+  </svg>
+)
+
+const SpeculateIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 2L3 9h5l-1 5 6-7H8l1-5z" />
+  </svg>
+)
+
 const PortfolioIcon = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round">
     <rect x="2" y="4.5" width="12" height="9" rx="2" />
     <path d="M5.5 4.5V3.5a1.5 1.5 0 0 1 1.5-1.5h2a1.5 1.5 0 0 1 1.5 1.5v1" />
+  </svg>
+)
+
+const ArchitectureIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 1.5L2 5l6 3.5L14 5 8 1.5z" />
+    <path d="M2 8.5L8 12l6-3.5" />
+    <path d="M2 12l6 3.5 6-3.5" />
   </svg>
 )
 

@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 const names = [
   'XeroVault', 'XeroFactory', 'XeroComponentToken', 'XeroYieldMarket', 'YieldMarketFactory', 'CurveLens', 'XeroRouter',
   'CorporateActionEngine', 'RiskGuardian', 'XeroOracle', 'MockStockToken', 'MockAggregator', 'MockUSDG',
+  'MockB20StockToken', 'BaseB20YieldLens'
 ]
 const out = {}
 for (const n of names) {
@@ -12,4 +13,4 @@ for (const n of names) {
   out[n] = JSON.parse(readFileSync(p, 'utf8')).abi
 }
 writeFileSync(new URL('../src/lib/abis.json', import.meta.url), JSON.stringify(out))
-console.log(`exported ${names.length} ABIs`)
+console.log(`exported ${names.length} ABIs for core Base app`)
