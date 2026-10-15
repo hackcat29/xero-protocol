@@ -20,6 +20,7 @@ export const DiscountIcon = icon(<><path d="M17 10.5L10.5 17 3 9.5V3h6.5L17 10.5
 export const UpfrontIcon = icon(<><circle cx="10" cy="10" r="7" /><path d="M10 6v8M7 9l3-3 3 3" /></>)
 export const PortfolioIcon = icon(<><rect x="3" y="6" width="14" height="11" rx="2" /><path d="M7 6V4.5A1.5 1.5 0 0 1 8.5 3h3A1.5 1.5 0 0 1 13 4.5V6" /></>)
 export const PoolIcon = icon(<><path d="M3 13c1.5 0 1.5-1.5 3.5-1.5S8 13 10 13s2-1.5 3.5-1.5S15 13 17 13" /><path d="M3 16.5c1.5 0 1.5-1.5 3.5-1.5S8 16.5 10 16.5s2-1.5 3.5-1.5 1.5 1.5 3.5 1.5" /><path d="M10 3v6M7.5 6.5L10 9l2.5-2.5" /></>)
+export const TradeIcon = icon(<><path d="M4 7h11l-3-3M16 13H5l3 3" /></>)
 export const ActivityIcon = icon(<><path d="M3 10h3l2-5 4 10 2-5h3" /></>)
 export const SearchIcon = icon(<><circle cx="9" cy="9" r="5.5" /><path d="M13 13l4 4" /></>)
 export const DocsIcon = icon(<><path d="M5 2.5h7l3 3v12H5z" /><path d="M12 2.5v3h3M8 10h4M8 13h4" /></>)

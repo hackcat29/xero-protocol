@@ -899,3 +899,18 @@ kbd { font-family: var(--sans); font-size: 11.5px; font-weight: 600; padding: 2p
 .pool-list button { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px; border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; text-align: left; color: inherit; }
 .pool-list button:hover, .pool-list button.on { background: var(--surface-2); }
 .table tbody tr.row-on { background: var(--brand-soft); }
+
+/* phone tab bar: Trade sheet */
+.tabbar button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 0; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--muted); font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer; }
+.tabbar button.active { color: var(--brand); }
+.trade-sheet-root { display: none; }
+@media (max-width: 1020px) {
+  .trade-sheet-root { display: block; position: fixed; inset: 0; z-index: 39; }
+  .trade-sheet-overlay { position: absolute; inset: 0; background: rgba(8, 14, 11, 0.35); }
+  .trade-sheet { position: absolute; left: 8px; right: 8px; bottom: calc(70px + env(safe-area-inset-bottom)); display: grid; gap: 4px; padding: 8px 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow); animation: sheet-up 0.16s ease-out; }
+  .trade-sheet-grab { width: 36px; height: 4px; border-radius: 4px; background: var(--line); margin: 2px auto 6px; }
+  .trade-sheet a { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: var(--r-md); }
+  .trade-sheet a:hover, .trade-sheet a.on { background: var(--surface-2); }
+}
+@keyframes sheet-up { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
+.workspace aside { scroll-margin-top: 76px; }

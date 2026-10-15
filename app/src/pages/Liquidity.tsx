@@ -27,7 +27,13 @@ export function Liquidity() {
   const mine = (folio?.positions ?? []).filter((p: Position) => p.lp > 0n)
   const market = pools.find((m) => m.symbol === params.get('s') && m.label === params.get('m')) ?? pools.find((m) => m.symbol === FLAGSHIP && m.label === '1Y') ?? pools[0]
   const asset = data?.assets.find((a) => a.token === market?.token)
-  const pick = (m: Market) => setParams({ s: m.symbol, m: m.label }, { replace: true })
+  const pick = (m: Market) => {
+    setParams({ s: m.symbol, m: m.label }, { replace: true })
+    // on phones the ticket sits below the pool list: bring it into view
+    if (window.matchMedia('(max-width: 1020px)').matches) {
+      requestAnimationFrame(() => document.querySelector('.workspace aside')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+    }
+  }
   const total = pools.reduce((a, m) => a + m.liquidityUsd, 0)
   const yours = mine.reduce((a, p) => a + p.lpUsd, 0)
 

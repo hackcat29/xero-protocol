@@ -1,9 +1,9 @@
-import type { ReactNode } from 'react'
-import { Link, NavLink } from 'react-router'
+import { useEffect, useState, type ReactNode } from 'react'
+import { Link, NavLink, useLocation } from 'react-router'
 import { AccountButton } from './Account'
 import { Logo } from './Brand'
 import { TestTokensButton } from './DevConsole'
-import { ActivityIcon, DiscountIcon, DocsIcon, GiftIcon, HomeIcon, MarketsIcon, PoolIcon, PortfolioIcon, UpfrontIcon } from './icons'
+import { ActivityIcon, DiscountIcon, DocsIcon, GiftIcon, HomeIcon, MarketsIcon, PoolIcon, PortfolioIcon, TradeIcon, UpfrontIcon } from './icons'
 import { DOCS_URL, GitHubIcon, NetworkSwitch, REPO_URL } from './Nav'
 import { SearchButton } from './Search'
 import { chain, isDemo } from '../lib/network'
@@ -38,13 +38,52 @@ const NAV: { group?: string; items: { to: string; label: string; icon: ReactNode
   },
 ]
 
-const TABS = [
-  { to: '/app', label: 'Home', icon: <HomeIcon size={22} />, end: true },
-  { to: '/markets', label: 'Markets', icon: <MarketsIcon size={22} /> },
-  { to: '/discount', label: 'Discount', icon: <DiscountIcon size={22} /> },
-  { to: '/upfront', label: 'Upfront', icon: <UpfrontIcon size={22} /> },
-  { to: '/portfolio', label: 'Portfolio', icon: <PortfolioIcon size={22} /> },
+/** Phones get five tabs, as brokerage apps do: Trade opens a sheet with both trade flows, Earn is liquidity. */
+const TRADE = [
+  { to: '/discount', label: 'Buy at a discount', desc: "Pay less than today's price for shares delivered later", icon: <DiscountIcon size={22} /> },
+  { to: '/upfront', label: 'Dividends upfront', desc: 'Get paid now for the dividends your shares will earn', icon: <UpfrontIcon size={22} /> },
 ]
+
+function TabBar() {
+  const { pathname } = useLocation()
+  const [trade, setTrade] = useState(false)
+  const onTrade = TRADE.some((t) => pathname.startsWith(t.to))
+  useEffect(() => setTrade(false), [pathname])
+  useEffect(() => {
+    if (!trade) return
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setTrade(false)
+    document.addEventListener('keydown', esc)
+    return () => document.removeEventListener('keydown', esc)
+  }, [trade])
+
+  return (
+    <>
+      {trade && (
+        <div className="trade-sheet-root">
+          <div className="trade-sheet-overlay" onClick={() => setTrade(false)} />
+          <div className="trade-sheet" role="dialog" aria-label="Trade">
+            <div className="trade-sheet-grab" aria-hidden="true" />
+            {TRADE.map((t) => (
+              <Link key={t.to} to={t.to} className={pathname.startsWith(t.to) ? 'on' : ''}>
+                <span className="menu-icon">{t.icon}</span>
+                <span className="menu-text"><b>{t.label}</b><small>{t.desc}</small></span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+      <nav className="tabbar" aria-label="App">
+        <NavLink to="/app" end><HomeIcon size={22} />Home</NavLink>
+        <NavLink to="/markets"><MarketsIcon size={22} />Markets</NavLink>
+        <button className={onTrade || trade ? 'active' : ''} aria-expanded={trade} aria-haspopup="dialog" onClick={() => setTrade((o) => !o)}>
+          <TradeIcon size={22} />Trade
+        </button>
+        <NavLink to="/liquidity"><PoolIcon size={22} />Earn</NavLink>
+        <NavLink to="/portfolio"><PortfolioIcon size={22} />Portfolio</NavLink>
+      </nav>
+    </>
+  )
+}
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
@@ -99,11 +138,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </footer>
       </div>
 
-      <nav className="tabbar" aria-label="App">
-        {TABS.map((t) => (
-          <NavLink key={t.to} to={t.to} end={t.end}>{t.icon}{t.label}</NavLink>
-        ))}
-      </nav>
+      <TabBar />
     </div>
   )
 }
