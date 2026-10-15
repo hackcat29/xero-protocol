@@ -9,8 +9,10 @@ const CHROME = process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Conte
 mkdirSync(OUT, { recursive: true })
 
 const pages = [
-  { path: '/', wait: '.kpi b', name: 'landing', height: 3800 },
-  { path: '/markets', wait: '.markets-table tbody tr', name: 'markets', height: 1400 },
+  { path: '/', wait: '.proof b', name: 'landing', height: 3800 },
+  { path: '/markets', wait: '.table tbody tr', name: 'markets', height: 1400 },
+  { path: '/discount', wait: '.ticket .amount', name: 'discount', height: 1600 },
+  { path: '/upfront', wait: '.ticket .amount', name: 'upfront', height: 1600 },
   { path: '/markets/SCHDc?m=1Y', wait: '.ticket .amount', name: 'asset', height: 1900 },
   { path: '/portfolio', wait: '.empty-state, .kpis', name: 'portfolio', height: 900 },
 ]

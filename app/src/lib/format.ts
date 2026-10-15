@@ -80,7 +80,11 @@ export function errMsg(e: unknown): string {
   const m = x?.shortMessage ?? x?.message ?? String(e)
   if (/User rejected|denied/i.test(m)) return 'Transaction rejected in wallet'
   const custom = /reverted with the following reason:\s*(.+)|error (\w+)\(/.exec(m)
-  return custom ? humanError(custom[1] ?? custom[2]) : m.split('\n')[0]
+  if (custom) return humanError(custom[1] ?? custom[2])
+  const selector = /signature:\s*(0x[0-9a-f]{8})/i.exec(m + ' ' + (x?.details ?? ''))?.[1]
+  if (selector) return SELECTORS[selector.toLowerCase()] ?? 'The network rejected this transaction. Please try again.'
+  if (/reverted/i.test(m)) return 'The network rejected this transaction. Please try again.'
+  return m.split('\n')[0]
 }
 
 const ERRORS: Record<string, string> = {
@@ -95,5 +99,12 @@ const ERRORS: Record<string, string> = {
   TargetPaused: 'This market is paused by the guardian',
   ZeroAmount: 'Amount is too small',
   MathError: 'Trade size exceeds available liquidity',
+  InsufficientOutput: 'Price moved beyond your price protection',
+  ERC20InsufficientAllowance: 'Token approval not confirmed yet. Please try again in a moment',
+  ERC20InsufficientBalance: 'Not enough balance for this trade',
+}
+const SELECTORS: Record<string, string> = {
+  '0xfb8f41b2': 'Token approval not confirmed yet. Please try again in a moment',
+  '0xe450d38c': 'Not enough balance for this trade',
 }
 const humanError = (name: string) => ERRORS[name] ?? name

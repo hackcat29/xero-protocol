@@ -1,0 +1,57 @@
+---
+title: "Get dividends upfront"
+description: "Turn the dividends your shares will pay into money today, and keep your shares."
+---
+
+If you own a dividend-paying stock, Xero can pay you its future dividends today. You choose a date, and you're paid now for every dividend the shares would pay until then. Your shares come back to you on that date.
+
+## Example
+
+You hold 100 SCHD worth $2,840.
+
+| | |
+| --- | --- |
+| Paid to you today | about $100.91 (in `SCHDc`) |
+| For the dividends until | Oct 15, 2027 |
+| Your shares back on | Oct 15, 2027 |
+| Upfront payout | 3.55% of your position |
+
+In the meantime your 100 shares still rise and fall with the market. You keep all of that.
+
+## How to do it
+
+<Steps>
+  <Step title="Choose a stock and a date">
+    Open **Dividends upfront**. Each card shows what 100 shares would pay you today for the selected maturity.
+  </Step>
+  <Step title="Enter how many shares to use">
+    The ticket shows the payout, the date your shares come back, and the payout as a share of your position.
+  </Step>
+  <Step title="Confirm">
+    Approve the token the first time, then confirm. The payout arrives in your wallet in the same transaction.
+  </Step>
+  <Step title="Collect your shares at maturity">
+    You hold a share token until the date. Redeem it from **Portfolio** for your shares.
+  </Step>
+</Steps>
+
+## Under the hood
+
+The app calls `stripAndSellYield` on the Xero router: it splits your shares, sends you the share tokens, and sells the dividend tokens on the dividend market, paying the proceeds to you.
+
+## Things to know
+
+<AccordionGroup>
+  <Accordion title="The payout is in the tokenized stock">
+    You're paid in the same tokenized stock, for example `SCHDc`, which you can hold or sell elsewhere. It's money now, not more stock locked up.
+  </Accordion>
+  <Accordion title="What if dividends change?">
+    If the company raises its dividend, the buyer of your dividends keeps the extra. If it cuts or suspends it, you've already been paid. Your share position is unaffected either way.
+  </Accordion>
+  <Accordion title="It's not a loan">
+    There's no interest, no repayment and no liquidation. You've sold something (future dividends) at a market price.
+  </Accordion>
+  <Accordion title="Taxes">
+    Selling future dividends may be treated differently from receiving them. Ask a tax professional where you live.
+  </Accordion>
+</AccordionGroup>

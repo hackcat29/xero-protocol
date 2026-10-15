@@ -3,70 +3,72 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink } from 'react-router'
 import { Logo } from './Brand'
 import { chain, isDemo, isDevnet, networks, switchNetwork } from '../lib/network'
-import { DevConsoleButton } from './DevConsole'
+import { TestTokensButton } from './DevConsole'
 
 export const REPO_URL = 'https://github.com/hackcat29/xero-protocol'
-export const DOCS_URL = `${REPO_URL}#readme`
+export const DOCS_URL: string = import.meta.env.VITE_DOCS_URL ?? `${REPO_URL}/tree/main/docs`
 
-/** Marketing header: product sections and a way into the app. */
+/** Marketing header: the two things Xero does, the markets, and a way into the app. */
 export function SiteNav() {
   return (
-    <header className="nav nav-site">
-      <div className="nav-inner">
-        <Logo />
-        <nav className="site-links" aria-label="Site">
-          <a href="#product">B20 Yield Stripping</a>
-          <a href="#pillars">3 Pillars</a>
-          <NavLink to="/architecture">Architecture</NavLink>
-          <NavLink to="/markets">Markets</NavLink>
-          <a href={DOCS_URL} target="_blank" rel="noreferrer">Docs</a>
-        </nav>
-        <div className="nav-right">
-          <a className="icon-link" href={REPO_URL} target="_blank" rel="noreferrer" aria-label="Xero on GitHub" title="GitHub">
-            <GitHubIcon />
-          </a>
-          <Link to="/markets" className="btn btn-primary">Launch App</Link>
+    <>
+      {isDemo && (
+        <div className="announce">
+          Xero is live on Base Sepolia with free test tokens. <Link to="/markets">Try it</Link>
         </div>
-      </div>
-    </header>
+      )}
+      <header className="nav nav-site">
+        <div className="nav-inner">
+          <Logo />
+          <nav className="site-links" aria-label="Site">
+            <a href="/#discount">Buy at a discount</a>
+            <a href="/#upfront">Dividends upfront</a>
+            <Link to="/markets">Markets</Link>
+            <a href="/#faq">FAQ</a>
+            <a href={DOCS_URL} target="_blank" rel="noreferrer">Docs</a>
+          </nav>
+          <div className="nav-right">
+            <a className="icon-link hide-sm" href={REPO_URL} target="_blank" rel="noreferrer" aria-label="Xero on GitHub" title="GitHub">
+              <GitHubIcon />
+            </a>
+            <Link to="/markets" className="btn btn-primary">Open app</Link>
+          </div>
+        </div>
+      </header>
+    </>
   )
 }
 
-/** App header: complete suite of Base yield-stripping tools */
+/** App header: what you can do, your holdings, network and wallet. */
 export function AppNav() {
   return (
     <>
       <header className="nav nav-app">
         <div className="nav-inner">
           <Logo />
+          <nav className="app-tabs" aria-label="App">
+            <NavLink to="/markets">Markets</NavLink>
+            <NavLink to="/discount">Buy at a discount</NavLink>
+            <NavLink to="/upfront">Dividends upfront</NavLink>
+            <NavLink to="/portfolio">Portfolio</NavLink>
+          </nav>
           <div className="nav-right">
-            <nav className="app-tabs" aria-label="App">
-              <NavLink to="/markets"><MarketsIcon />Markets</NavLink>
-              <NavLink to="/strip"><StripIcon />Strip Vault</NavLink>
-              <NavLink to="/discount"><DiscountIcon />Discount PT</NavLink>
-              <NavLink to="/speculate"><SpeculateIcon />Speculate YT</NavLink>
-              <NavLink to="/portfolio"><PortfolioIcon />Portfolio</NavLink>
-              <NavLink to="/architecture"><ArchitectureIcon />Architecture</NavLink>
-            </nav>
-            <span className="nav-sep" aria-hidden="true" />
-            {isDemo && <DevConsoleButton />}
+            {isDemo && <TestTokensButton />}
             <NetworkSwitch />
             <WalletButton />
           </div>
         </div>
       </header>
-      <nav className="tabbar" aria-label="Mobile Navigation">
+      <nav className="tabbar" aria-label="App">
         <NavLink to="/markets"><MarketsIcon />Markets</NavLink>
-        <NavLink to="/strip"><StripIcon />Strip</NavLink>
         <NavLink to="/discount"><DiscountIcon />Discount</NavLink>
-        <NavLink to="/speculate"><SpeculateIcon />Speculate</NavLink>
+        <NavLink to="/upfront"><UpfrontIcon />Upfront</NavLink>
         <NavLink to="/portfolio"><PortfolioIcon />Portfolio</NavLink>
       </nav>
     </>
   )
 }
 
-/** Network selector configured for Base chains */
 function NetworkSwitch() {
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
@@ -82,24 +84,18 @@ function NetworkSwitch() {
     }
   }, [open])
 
-  const dot = <i className={isDevnet ? 'dot dot-dev' : 'dot dot-base'} />
+  const dot = <i className={chain.testnet || isDevnet ? 'dot dot-test' : 'dot'} />
   if (networks.length < 2) {
     return (
       <span className="chain-pill" title={`Network: ${chain.name}`}>
         {dot}
-        {chain.name}
+        <span className="net-name">{chain.name}</span>
       </span>
     )
   }
   return (
     <div className="net" ref={root}>
-      <button
-        className="chain-pill chain-pill-btn"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-        title="Switch network"
-      >
+      <button className="chain-pill chain-pill-btn" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((o) => !o)} title="Switch network">
         {dot}
         <span className="net-name">{chain.name}</span>
         <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -111,11 +107,8 @@ function NetworkSwitch() {
           {networks.map((n) => (
             <li key={n.id} role="option" aria-selected={n.id === chain.id}>
               <button onClick={() => switchNetwork(n.id)}>
-                <span className="menu-network-row">
-                  <i className={n.id === 31337 ? 'dot dot-dev' : 'dot dot-base'} />
-                  {n.name}
-                </span>
-                {n.id === chain.id && <b aria-hidden="true">✓</b>}
+                {n.name}
+                {n.id === chain.id && <span aria-hidden="true">✓</span>}
               </button>
             </li>
           ))}
@@ -125,28 +118,25 @@ function NetworkSwitch() {
   )
 }
 
-export function WalletButton({ block = false }: { block?: boolean }) {
+export function WalletButton({ block = false, label = 'Connect wallet' }: { block?: boolean; label?: string }) {
   return (
     <ConnectButton.Custom>
       {({ account, chain: c, openAccountModal, openChainModal, openConnectModal, mounted }) => {
-        if (!mounted) return <button className="btn btn-primary" aria-hidden disabled>Connect</button>
+        const cls = `btn ${block ? 'btn-block btn-lg' : ''}`
+        if (!mounted) return <button className={`${cls} btn-primary`} aria-hidden disabled>{block ? label : 'Connect'}</button>
         if (!account) {
           return (
-            <button className={`btn btn-primary ${block ? 'btn-block' : ''}`} onClick={openConnectModal}>
-              Connect<span className="label-wide">Wallet</span>
+            <button className={`${cls} btn-primary`} onClick={openConnectModal}>
+              {block ? label : 'Connect'}
             </button>
           )
         }
         if (c?.unsupported) {
-          return (
-            <button className={`btn btn-danger ${block ? 'btn-block' : ''}`} onClick={openChainModal}>
-              Switch Network
-            </button>
-          )
+          return <button className={`${cls} btn-danger`} onClick={openChainModal}>Switch network</button>
         }
         return (
-          <button className={`btn btn-account ${block ? 'btn-block' : ''}`} onClick={openAccountModal}>
-            <span className="avatar" style={{ background: `hsl(${parseInt(account.address.slice(2, 6), 16) % 360} 55% 45%)` }} />
+          <button className={`${cls} btn-account`} onClick={openAccountModal}>
+            <span className="avatar" style={{ background: `hsl(${parseInt(account.address.slice(2, 6), 16) % 360} 40% 42%)` }} />
             {account.displayName}
           </button>
         )
@@ -155,48 +145,21 @@ export function WalletButton({ block = false }: { block?: boolean }) {
   )
 }
 
-// ------------------------------------------------------------------ Icons
+// ------------------------------------------------------------------ icons
+
+const icon = { width: 20, height: 20, viewBox: '0 0 20 20', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true }
 
 const MarketsIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M2 12.5l3.5-4 3 2.5L14 4" />
-    <path d="M10.5 4H14v3.5" />
-  </svg>
+  <svg {...icon}><path d="M3 15l4.5-5 3.5 3L17 6" /><path d="M13 6h4v4" /></svg>
 )
-
-const StripIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 4h10M3 8h10M3 12h6" />
-    <circle cx="12" cy="11.5" r="1.5" />
-  </svg>
-)
-
 const DiscountIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M13.5 8.5L8.5 13.5 2.5 7.5V2.5h5l6 6z" />
-    <circle cx="5" cy="5" r="1" fill="currentColor" />
-  </svg>
+  <svg {...icon}><path d="M17 10.5L10.5 17 3 9.5V3h6.5L17 10.5z" /><circle cx="6.5" cy="6.5" r="1.2" fill="currentColor" /></svg>
 )
-
-const SpeculateIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 2L3 9h5l-1 5 6-7H8l1-5z" />
-  </svg>
+const UpfrontIcon = () => (
+  <svg {...icon}><circle cx="10" cy="10" r="7" /><path d="M10 6v8M7 9l3-3 3 3" /></svg>
 )
-
 const PortfolioIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round">
-    <rect x="2" y="4.5" width="12" height="9" rx="2" />
-    <path d="M5.5 4.5V3.5a1.5 1.5 0 0 1 1.5-1.5h2a1.5 1.5 0 0 1 1.5 1.5v1" />
-  </svg>
-)
-
-const ArchitectureIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M8 1.5L2 5l6 3.5L14 5 8 1.5z" />
-    <path d="M2 8.5L8 12l6-3.5" />
-    <path d="M2 12l6 3.5 6-3.5" />
-  </svg>
+  <svg {...icon}><rect x="3" y="6" width="14" height="11" rx="2" /><path d="M7 6V4.5A1.5 1.5 0 0 1 8.5 3h3A1.5 1.5 0 0 1 13 4.5V6" /></svg>
 )
 
 export const GitHubIcon = ({ size = 18 }: { size?: number }) => (

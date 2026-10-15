@@ -1,0 +1,67 @@
+---
+title: "XeroVault"
+description: "Splitting, recombining, redeeming and dividend accrual for one stock and maturity."
+---
+
+One vault exists per tokenized stock and maturity. It owns a share token (`pt()`) and a dividend token (`yt()`), both 18-decimal ERC-20s.
+
+## Writes
+
+```solidity
+function strip(uint256 raw, address to) external returns (uint256 units);
+```
+Deposit `raw` tokenized stock and mint `units` of PT and YT to `to`. Charges the split fee. Reverts after maturity (`Matured`), while frozen (`VaultFrozen`), when halted (`VaultHaltedForAction`) or when the guardian has paused the vault.
+
+```solidity
+function recombine(uint256 units, address to) external returns (uint256 raw);
+```
+Before maturity, burn `units` of PT and YT from the caller and return the stock. Works while frozen, at the last good index.
+
+```solidity
+function redeem(uint256 units, address to) external returns (uint256 raw);
+```
+At or after maturity, burn `units` of PT and return `units ÷ I_maturity` tokenized stock. Reverts with `NotMatured` before maturity and `MaturityNotSettled` until the maturity index is recorded.
+
+```solidity
+function claimYield(address user) external returns (uint256 raw);
+```
+Pay `user` the stock their YT has accrued. Callable by anyone; funds always go to `user`.
+
+```solidity
+function sync() external;
+```
+Read the multiplier, apply newly effective corporate actions, and settle maturity. Every write calls it first; keepers can call it directly.
+
+## Reads
+
+| Function | Returns |
+| --- | --- |
+| `previewStrip(uint256 raw)` | Units minted for `raw`, after the fee |
+| `previewRedeem(uint256 units)` | Stock returned for `units` (redeem after maturity, recombine before) |
+| `claimable(address user)` | Stock `user` has accrued as of the last sync, net of the protocol fee |
+| `dividendIndex()` | Current `I = M / S` |
+| `structuralFactor()` | Current `S` from reported splits |
+| `maturity()` | Unix time of maturity |
+| `maturityIndex()` | Index fixed at maturity, `0` until settled |
+| `frozen()` | Whether deposits and accrual are paused for an unexplained change |
+| `halted()` | Whether new deposits are stopped after an unsupported corporate action |
+| `invariantHolds()` | Whether the vault's collateral covers every PT and YT claim |
+| `totalUnits()` | PT (and YT) units outstanding |
+| `underlying()`, `pt()`, `yt()` | Token addresses |
+
+## Events
+
+```solidity
+event Stripped(address indexed caller, address indexed to, uint256 raw, uint256 fee, uint256 units);
+event Recombined(address indexed owner, address indexed to, uint256 units, uint256 raw);
+event Redeemed(address indexed owner, address indexed to, uint256 units, uint256 raw);
+event YieldClaimed(address indexed user, uint256 raw);
+event IndexUpdated(uint256 multiplier, uint256 structuralFactor, uint256 dividendIndex);
+event MaturitySettled(uint256 maturityIndex);
+event Frozen(uint256 multiplier, uint256 candidateIndex);
+event VaultHalted(uint256 actionIndex);
+```
+
+## Freeze rules
+
+The index may never fall, and may rise in one sync by at most `maxGrowthPerSync` plus any growth authorised by reported cash dividends. Anything else (an unreported split, the token's `oraclePaused` flag) freezes the vault: no new deposits and no YT accrual until the change is explained. Recombination stays open at the last good index, which is exact for a PT and YT pair however the change is later classified.

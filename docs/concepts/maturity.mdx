@@ -1,0 +1,38 @@
+---
+title: "Maturity dates"
+description: "What happens before, on, and after a maturity date."
+---
+
+Every Xero market has a maturity date. Today each stock has four: about **1 week, 3 months, 6 months and 1 year** out.
+
+## Before maturity
+
+- Share tokens and dividend tokens are separate and freely transferable.
+- Dividend tokens collect dividends as they're reinvested. Claim them any time.
+- Anyone holding a share token **and** a dividend token can rejoin them into the tokenized stock straight away.
+- The dividend market is open for trading.
+
+## On the maturity date
+
+The vault records the final dividend position on the first update at or after the maturity time. From then on:
+
+- Each **share token** redeems for its shares. The app moves the market to **Redeem**.
+- **Dividend tokens** stop collecting. Anything already collected stays claimable forever.
+- The dividend market closes for trading. Liquidity providers can always withdraw.
+
+<Note>
+  If you try to redeem in the first moments after maturity and see "Maturity is being settled", the vault hasn't recorded its final update yet. Any transaction that touches the vault triggers it; try again shortly.
+</Note>
+
+## After maturity
+
+There's no deadline to redeem. Dividends paid after maturity stay with the share token, because it has become the share, so you don't lose anything by redeeming late.
+
+## Choosing a maturity
+
+| If you want… | Choose… |
+| --- | --- |
+| The biggest discount | The longest maturity (more dividends skipped) |
+| Your shares back sooner | A shorter maturity |
+| The biggest upfront payout | The longest maturity |
+| To test the full cycle quickly | 1 week |

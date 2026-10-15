@@ -1,17 +1,19 @@
-# Xero Protocol
+# Xero
 
-**Keep the stock. Trade the dividends.**
+**Stocks at a discount. Dividends in advance.**
 
-**Live on Robinhood Chain testnet and Arbitrum Sepolia: [xeroprotocol.com](https://xeroprotocol.com)**
+Xero is the first platform to split tokenized stocks into the share and its dividends. Investors buy shares below today's price; shareholders take their future dividends upfront and keep their stock.
 
-Robinhood Stock Tokens never pay cash dividends. Dividends are reinvested, and the token's on-chain `uiMultiplier()` grows: each token comes to represent more shares. Xero splits a Stock Token into two independently tradable claims:
+**Live on Base Sepolia: [xeroprotocol.com](https://xeroprotocol.com)** · Docs: [`docs/`](docs/) (Mintlify)
+
+Tokenized stocks never pay cash dividends. Dividends are reinvested, and the token's on-chain `uiMultiplier()` grows: each token comes to represent more shares. Xero splits a tokenized stock into two independently tradable tokens:
 
 ```
-1 SCHD Stock Token  ──strip──▶  xSCHD-PT-1Y   Principal: the shares you deposited, redeemable at maturity
-                             +  xSCHD-YT-1Y   Yield: the extra shares reinvested dividends create until maturity
+1 SCHDc  ──split──▶  share token     xSCHDc-PT-1Y   becomes the share at maturity
+                  +  dividend token  xSCHDc-YT-1Y   collects every dividend until then
 ```
 
-PT plus YT always equals the deposited token, and they recombine at any time. Markets at several maturities form an **onchain implied dividend curve**.
+The two always add up to one share and can be rejoined before maturity. Buying only the share token is **buying at a discount**; selling the dividend token is **getting dividends upfront**. Markets at several maturities form an **on-chain implied dividend curve**.
 
 | Directory | What's in it |
 |---|---|
@@ -20,8 +22,8 @@ PT plus YT always equals the deposited token, and they recombine at any time. Ma
 | [`services/keeper/`](services/keeper/) | Reporter + keeper: attests Robinhood corporate actions from Robinhood's public API, maintains vaults |
 | [`app/`](app/) | Web app (React, wagmi, RainbowKit, TanStack Query, TradingView Lightweight Charts) |
 | [`deploy/`](deploy/) | Production config for Robinhood Chain mainnet, plus rehearsal outputs |
-| [`docs/`](docs/) | Official GitBook documentation for Base Mainnet & B20 tokenized stocks |
-| [`brand/`](brand/) | Logo, icons, social card, colour and type tokens |
+| [`docs/`](docs/) | User and developer documentation ([Mintlify](https://mintlify.com)); preview with `cd docs && npx mint dev` |
+| [`brand/`](brand/) | Logo and colour sources; `node brand/render.mjs` renders the app icons, social card and docs logos |
 
 ---
 
@@ -74,7 +76,7 @@ cd app && pnpm dev                               # app on :5173; switch networks
 ./scripts/testnet-feeds.sh [robinhood|arbitrum]  # every day or two: mock feeds go stale after 4 days
 ```
 
-The app deploys to Cloudflare Workers ([`app/wrangler.jsonc`](app/wrangler.jsonc)) from GitHub Actions on every push to `main`, after the contract, Stylus, keeper and app checks pass. It serves `xeroprotocol.com` and `www.xeroprotocol.com`. CI needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets and reads `VITE_WALLETCONNECT_PROJECT_ID` from the repository variables; to deploy by hand, run `cd app && pnpm build && npx wrangler deploy`.
+The app deploys to Cloudflare Workers ([`app/wrangler.jsonc`](app/wrangler.jsonc)) from GitHub Actions on every push to `main`, after the contract, Stylus, keeper and app checks pass. It serves `xeroprotocol.com` and `www.xeroprotocol.com`. CI needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets and reads `VITE_WALLETCONNECT_PROJECT_ID` from the repository variables; to deploy by hand, run `cd app && VITE_CHAIN_ID=84532 pnpm build && npx wrangler deploy`.
 
 Put the keystore password in `~/.foundry/xero-testnet.password` (chmod 600) to skip the prompts.
 

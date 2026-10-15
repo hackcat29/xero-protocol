@@ -152,6 +152,37 @@ contract XeroYieldMarketTest is XeroFixture {
         assertEq(pt.balanceOf(address(router)), 0);
     }
 
+    function test_RouterBuyPrincipalReinvestsYieldProceeds() public {
+        uint256 before = aapl.balanceOf(carol);
+        uint256 oneRound = vault.previewStrip(100 ether);
+        vm.prank(carol);
+        (uint256 units, uint256 refund) = router.buyPrincipal(vault, market, 100 ether, 0, carol);
+        assertEq(pt.balanceOf(carol), units);
+        assertEq(yt.balanceOf(carol), 0);
+        assertGt(units, oneRound); // reinvesting the YT proceeds buys more PT than a single strip
+        assertLt(refund, 0.01 ether); // under 1 bp of the input is left over
+        assertEq(aapl.balanceOf(carol), before - 100 ether + refund);
+        assertEq(aapl.balanceOf(address(router)), 0);
+        assertEq(pt.balanceOf(address(router)), 0);
+        assertEq(yt.balanceOf(address(router)), 0);
+    }
+
+    function test_RouterBuyPrincipalEnforcesMinimum() public {
+        vm.prank(carol);
+        vm.expectRevert(XeroRouter.InsufficientOutput.selector);
+        router.buyPrincipal(vault, market, 100 ether, 1_000 ether, carol);
+    }
+
+    function testFuzz_RouterBuyPrincipalLeavesNothingBehind(uint256 raw) public {
+        raw = bound(raw, 1e12, 500 ether);
+        vm.prank(carol);
+        (uint256 units,) = router.buyPrincipal(vault, market, raw, 0, carol);
+        assertGe(units, vault.previewStrip(raw));
+        assertEq(aapl.balanceOf(address(router)), 0);
+        assertEq(pt.balanceOf(address(router)), 0);
+        assertEq(yt.balanceOf(address(router)), 0);
+    }
+
     function test_RouterExitRecombinesAndClaims() public {
         vm.prank(carol);
         uint256 units = router.strip(vault, 100 ether, carol);

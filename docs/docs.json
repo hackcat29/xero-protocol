@@ -1,0 +1,73 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "maple",
+  "name": "Xero",
+  "description": "Xero is the first platform to split tokenized stocks into the share and its dividends. Buy stocks at a discount, or get your dividends in advance.",
+  "colors": {
+    "primary": "#0e4a37",
+    "light": "#56b98c",
+    "dark": "#0e4a37"
+  },
+  "logo": {
+    "light": "/logo/light.png",
+    "dark": "/logo/dark.png",
+    "href": "https://xeroprotocol.com"
+  },
+  "favicon": "/favicon.svg",
+  "fonts": {
+    "heading": { "family": "Newsreader", "weight": 500 },
+    "body": { "family": "Geist" }
+  },
+  "background": {
+    "color": { "light": "#f7f4ec", "dark": "#0b1210" }
+  },
+  "banner": {
+    "content": "Xero is live on Base Sepolia with free test tokens. [Try the app](https://xeroprotocol.com/markets)",
+    "dismissible": true
+  },
+  "navbar": {
+    "links": [
+      { "label": "GitHub", "href": "https://github.com/hackcat29/xero-protocol" }
+    ],
+    "primary": { "type": "button", "label": "Open app", "href": "https://xeroprotocol.com/markets" }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Guides",
+        "groups": [
+          { "group": "Get started", "pages": ["index", "quickstart"] },
+          {
+            "group": "How Xero works",
+            "pages": ["concepts/tokenized-stocks", "concepts/share-and-dividends", "concepts/pricing", "concepts/maturity"]
+          },
+          {
+            "group": "Using Xero",
+            "pages": ["guides/buy-at-a-discount", "guides/dividends-upfront", "guides/trade-dividends", "guides/redeem-and-claim", "guides/provide-liquidity"]
+          },
+          { "group": "Reference", "pages": ["resources/fees", "resources/risks", "resources/faq", "resources/glossary"] }
+        ]
+      },
+      {
+        "tab": "Developers",
+        "groups": [
+          { "group": "Overview", "pages": ["developers/overview", "developers/deployments"] },
+          {
+            "group": "Contracts",
+            "pages": ["developers/router", "developers/vault", "developers/market", "developers/corporate-actions", "developers/guardian-and-oracle"]
+          },
+          { "group": "Integrate", "pages": ["developers/reading-data", "developers/local-development"] }
+        ]
+      }
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/hackcat29/xero-protocol",
+      "website": "https://xeroprotocol.com"
+    }
+  },
+  "seo": {
+    "metatags": { "og:image": "https://xeroprotocol.com/og-image.png" }
+  }
+}

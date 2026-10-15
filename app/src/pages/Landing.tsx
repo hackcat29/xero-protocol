@@ -1,319 +1,382 @@
-import { motion } from 'motion/react'
+import { useState } from 'react'
 import { Link } from 'react-router'
-import { Mark } from '../components/Brand'
-import { MarketIcon, TokenIcon } from '../components/TokenIcon'
-import { MarketsTable } from './Markets'
-import { compactUsd, date, pct, toNum, usd } from '../lib/format'
+import { Guilloche, StockMark } from '../components/Brand'
 import { DOCS_URL } from '../components/Nav'
+import { MarketsTable } from './Markets'
+import { company, term, ticker } from '../lib/assets'
+import { date, pct, usd } from '../lib/format'
 import { useProtocol, type Asset, type Market } from '../lib/protocol'
+
+const FEATURED = ['SCHDc', 'SPYc', 'AAPLc', 'NVDAc']
+
+/** The 1-year market for a stock: the longest maturity, so the clearest example of each benefit. */
+const yearMarket = (a: Asset) => a.markets.find((m) => m.live && m.label === '1Y') ?? a.markets.filter((m) => m.live).at(-1)
 
 export function Landing() {
   const { data } = useProtocol()
+  const assets = (data?.assets ?? []).filter((a) => FEATURED.includes(a.symbol)).sort((a, b) => FEATURED.indexOf(a.symbol) - FEATURED.indexOf(b.symbol))
+  const schd = data?.assets.find((a) => a.symbol === 'SCHDc')
+  const schdYear = schd && yearMarket(schd)
   const live = data?.markets.filter((m) => m.live) ?? []
-  const featured = live.slice().sort((a, b) => toNum(b.impliedYield) - toNum(a.impliedYield))[0]
-  const featuredAsset = featured && data?.assets.find((a) => a.token === featured.token)
+  const best = live.reduce<Market | undefined>((b, m) => (!b || m.ptDiscountPct > b.ptDiscountPct ? m : b), undefined)
+  const bestUpfront = live.reduce<Market | undefined>((b, m) => (!b || m.ytUsd > b.ytUsd ? m : b), undefined)
 
   return (
     <div className="landing">
-      {/* Hero Section */}
       <section className="hero">
-        <div className="hero-copy">
-          <div className="badge-chain-row">
-            <span className="base-tag">BUILT ON BASE</span>
-            <span className="b20-standard-tag">Coinbase B20 Tokenized Equities</span>
+        <Guilloche size={760} />
+        <div className="hero-inner">
+          <div>
+            <span className="eyebrow">The first dividend-splitting platform for tokenized stocks</span>
+            <h1 className="display" style={{ marginTop: 16 }}>
+              Stocks at a discount.
+              <br />
+              Dividends in advance.
+            </h1>
+            <p className="lede">
+              Xero splits a tokenized share into two parts you can trade on their own: the share, and the dividends it will pay. Investors buy
+              shares for less than today's price. Shareholders take next year's dividends today and keep their stock.
+            </p>
+            <div className="hero-ctas">
+              <Link to="/discount" className="btn btn-primary btn-lg">Buy at a discount</Link>
+              <Link to="/upfront" className="btn btn-lg">Get dividends upfront</Link>
+            </div>
+            <p className="hero-note">No account and no borrowing. Your wallet holds everything.</p>
           </div>
-          <h1>
-            Deconstruct the stock.
-            <br />
-            <em>Trade the dividends.</em>
-          </h1>
-          <p className="lede">
-            Coinbase B20 tokenized stocks wrap dividend compounding directly into an escalating <code>uiMultiplier</code>.
-            Xero deconstructs each token into a <b>Principal Token (PT)</b> for discounted stock ownership and a{' '}
-            <b>Yield Token (YT)</b> for high-leverage dividend cash flow on Base.
-          </p>
-          <div className="hero-ctas">
-            <Link to="/markets" className="btn btn-primary btn-lg">Launch App</Link>
-            <Link to="/strip" className="btn btn-lg">Strip Vault</Link>
-            <Link to="/architecture" className="btn btn-lg btn-ghost">Architecture</Link>
+          <QuoteCard assets={assets} />
+        </div>
+      </section>
+
+      <section className="proof" aria-label="Today on Xero">
+        <div className="proof-inner">
+          <div><span>Best discount today</span><b>{best ? `${best.ptDiscountPct.toFixed(2)}%` : '—'}</b></div>
+          <div><span>Paid upfront today on 100 {bestUpfront ? ticker(bestUpfront.symbol) : 'shares'}</span><b>{bestUpfront ? usd(bestUpfront.ytUsd * 100) : '—'}</b></div>
+          <div><span>Stocks and ETFs</span><b>{data ? data.assets.length : '—'}</b></div>
+          <div><span>Maturities</span><b>1 week to 1 year</b></div>
+        </div>
+      </section>
+
+      {/* Benefit 1 */}
+      <section className="section" id="discount">
+        <div className="benefit">
+          <div className="benefit-copy">
+            <span className="eyebrow">Buy at a discount</span>
+            <h2>Own great companies for less than the market price</h2>
+            <p>
+              Pick a stock and a date. You pay less than today's price, and on that date the full share is yours. The discount is what the dividends
+              until then are worth: someone else has already been paid for them.
+            </p>
+            <ul className="benefit-points">
+              <Point title="Know your discount on day one" body="Your price is locked when you buy. Hold to the date and the discount is yours." />
+              <Point title="The real share at the end" body="On the date, you redeem for the full share, and its dividends are yours from then on." />
+              <Point title="Made for long-term investors" body="If you don't need dividend income this year, why pay for it?" />
+            </ul>
+            <Link to="/discount" className="btn btn-primary">See today's discounts</Link>
           </div>
-        </div>
-        <div className="hero-visual">
-          {featured && featuredAsset ? (
-            <DecompositionCard asset={featuredAsset} market={featured} />
-          ) : (
-            <HeroMark />
-          )}
+          {schd && schdYear ? <DiscountExample asset={schd} market={schdYear} /> : <ExampleSkeleton />}
         </div>
       </section>
 
-      {/* KPI Stats */}
-      <section className="kpis">
-        <Kpi label="Total value stripped" value={data ? compactUsd(data.tvlUsd) : '—'} />
-        <Kpi label="Base pool liquidity" value={data ? compactUsd(data.liquidityUsd) : '—'} />
-        <Kpi label="B20 equities live" value={data ? String(data.assets.length) : '6'} />
-        <Kpi label="Top dividend leverage" value={featured ? `${featured.ytLeverage.toFixed(0)}x` : '85x'} accent />
-      </section>
-
-      {/* Section 1: The B20 Multiplier Deconstruction */}
-      <section className="section" id="product">
-        <header className="section-h">
-          <span className="eyebrow">Architecture</span>
-          <h2>Deconstructing the B20 Multiplier (M<sub>t</sub>)</h2>
-          <p>
-            Standard Pendle ERC-5115 Yield-Bearing Tokens assume recurring ERC-20 transfers.
-            Coinbase B20 tokenized equities instead escalate a continuous multiplier. Xero isolates that growth into pure financial primitives.
-          </p>
-        </header>
-
-        <div className="steps">
-          <Step
-            n="1"
-            title="Deposit B20 Stock Token"
-            body="Choose NVDAc, AAPLc, COINc, TSLAc, SPYc, or SCHDc. The vault locks the token securely on Base without rehypothecation."
-            icon={<TokenIcon symbol="NVDAc" size={40} />}
-          />
-          <Step
-            n="2"
-            title="Mint PT + YT Units"
-            body="PT captures baseline share capital at maturity. YT entitles holders to continuous multiplier growth (ΔM) via the streaming delta index."
-            icon={
-              <span className="pair">
-                <TokenIcon symbol="PT" kind="pt" size={34} />
-                <TokenIcon symbol="YT" kind="yt" size={34} />
-              </span>
-            }
-          />
-          <Step
-            n="3"
-            title="Trade, Lock, or Speculate"
-            body="Sell YT upfront for guaranteed fixed APY, buy PT at a deep discount to spot price, or trade YT for up to 120x dividend cash flow leverage."
-            icon={<Mark size={40} />}
-          />
-        </div>
-
-        <div className="formula">
-          <code>PT Redemption Baseline</code>
-          <span>=</span>
-          <code>{'Units ÷ I_maturity'}</code>
-          <span className="plus">+</span>
-          <code className="y">Streaming Yield (ΔM)</code>
-          <span>=</span>
-          <code className="y">{'Units × (M_current / M_last − 1)'}</code>
-          <span className="eq">= Full Underlying B20 Stock</span>
+      {/* Benefit 2 */}
+      <section className="section" id="upfront">
+        <div className="benefit flip benefit-gold">
+          <div className="benefit-copy">
+            <span className="eyebrow">Dividends upfront</span>
+            <h2>Get next year's dividends today. Keep your shares.</h2>
+            <p>
+              If you already own a dividend stock, you can sell the dividends it will pay until a date you choose and get paid now. Your shares come
+              back to you in full on that date.
+            </p>
+            <ul className="benefit-points">
+              <Point title="Money now, not in quarterly drips" body="A full year of expected dividends, paid upfront to your wallet." />
+              <Point title="Keep the upside" body="You still own the price movement of every share, up or down." />
+              <Point title="No loan, no liquidation" body="Nothing to repay and no margin calls. If the dividend is cut, you've already been paid." />
+            </ul>
+            <Link to="/upfront" className="btn btn-gold">See what your shares pay</Link>
+          </div>
+          {schd && schdYear ? <UpfrontExample asset={schd} market={schdYear} /> : <ExampleSkeleton />}
         </div>
       </section>
 
-      {/* Section 2: Three Core Financial Primitives */}
-      <section className="section" id="pillars">
-        <header className="section-h">
-          <span className="eyebrow">Financial Primitives</span>
-          <h2>Three Powerful Ways to Trade Equities on Base</h2>
-        </header>
-        <div className="uses">
-          <Use
-            tag="Primitive 1"
-            title="Fixed Yield Sourcing"
-            body="Strip your B20 stock and sell the Yield Token (YT) upfront on our AMM. Lock in a guaranteed fixed annual APY today with zero dividend volatility."
-            link="/strip"
-          />
-          <Use
-            tag="Primitive 2"
-            title="Discounted Stock Buying"
-            body="Buy Principal Tokens (PT) at an upfront discount to spot price (e.g. NVDAc at 8.4% off). Hold to maturity and redeem 1:1 for the full underlying share."
-            link="/discount"
-          />
-          <Use
-            tag="Primitive 3"
-            title="Leveraged Dividend Speculation"
-            body="Buy cheap YT tokens for 50x–120x cash flow leverage on dividend hikes, unexpected corporate payout increases, and special distributions."
-            link="/speculate"
-          />
-          <Use
-            tag="Core Defense"
-            title="Stock Split Immunity"
-            body="Corporate forward splits (2:1, 4:1) scale the structural factor S simultaneously, ensuring the Dividend Index I = M/S remains invariant (ΔI = 0)."
-            link="/architecture"
-          />
+      {/* How the split works */}
+      <section className="section" id="split">
+        <div className="anatomy">
+          <div className="section-h" style={{ marginBottom: 0 }}>
+            <span className="eyebrow">One share, two parts</span>
+            <h2>Why the share and its dividends can be priced apart</h2>
+            <p>
+              A share's price already includes the dividends people expect it to pay. Xero holds the share and issues two tokens against it: one that
+              becomes the share on a set date, and one that collects every dividend until then. Together they are always worth exactly one share,
+              and anyone holding both can rejoin them into the share before that date.
+            </p>
+          </div>
+          {schd && schdYear ? <Anatomy asset={schd} market={schdYear} /> : <ExampleSkeleton />}
+        </div>
+        <div className="also">
+          <Link to="/markets">
+            <b>Trade the dividends themselves</b>
+            <span>Think a company will raise its payout? Buy its dividend stream for a fraction of the share price.</span>
+          </Link>
+          <Link to="/markets">
+            <b>Earn from providing liquidity</b>
+            <span>Pool providers earn trading fees plus the dividends held in the pool.</span>
+          </Link>
         </div>
       </section>
 
-      {/* Section 3: Live Markets Table Preview */}
+      {/* Live markets */}
       {data && live.length > 0 && (
         <section className="section">
-          <header className="section-h row-h">
+          <div className="section-h section-row">
             <div>
-              <span className="eyebrow">Live on Base</span>
-              <h2>B20 Tokenized Equities Markets</h2>
+              <span className="eyebrow">Live prices</span>
+              <h2>Today's best discounts</h2>
             </div>
-            <Link to="/markets" className="btn">All Markets →</Link>
-          </header>
-          <MarketsTable
-            markets={live.slice().sort((a, b) => toNum(b.impliedYield) - toNum(a.impliedYield)).slice(0, 6)}
-            assets={data.assets}
-            now={data.now}
-            compact
-          />
+            <Link to="/markets" className="btn">All markets</Link>
+          </div>
+          <MarketsTable markets={live.slice().sort((a, b) => b.ptDiscountPct - a.ptDiscountPct).slice(0, 6)} assets={data.assets} compact />
         </section>
       )}
 
-      {/* Section 4: Security & Verifiability */}
-      <section className="section" id="security">
-        <header className="section-h">
+      {/* Safety */}
+      <section className="section" id="safety">
+        <div className="section-h">
           <span className="eyebrow">Security</span>
-          <h2>Formal Invariant Guarantees & Base Scalability</h2>
-        </header>
+          <h2>Built to be boring with your money</h2>
+          <p>The rules are written into public smart contracts on Base. Nobody at Xero can move, freeze or lend out your shares.</p>
+        </div>
         <div className="safety">
-          <Safe
-            title="Solvency by Mathematical Construction"
-            body="PT redemption claims plus YT streaming payouts mathematically equal deposited B20 collateral at every block. Fuzzed across thousands of random corporate action sequences."
-          />
-          <Safe
-            title="Attested Split Invariance"
-            body="Forward stock splits scale both the multiplier and structural factor S in tandem. Dividend index I = M/S remains unchanged, preventing vault insolvency."
-          />
-          <Safe
-            title="Non-Custodial Redemption"
-            body="Emergency pauses can halt new deposits but can never freeze token recombination, maturity redemption, or already-accrued yield withdrawals."
-          />
-          <Safe
-            title="Low Latency, Low Fee Execution"
-            body="Deployed on Base (OP Stack L2) with sub-second finality and sub-cent gas fees, enabling frequent dividend delta claims and high-frequency AMM arbitrage."
-          />
+          <Safe title="Fully backed" body="Every share token and dividend token is backed by real tokenized shares held in the vault, one for one." />
+          <Safe title="You can always leave" body="Emergency pauses can stop new deposits, but never stop you redeeming, rejoining or claiming." />
+          <Safe title="Splits handled for you" body="Stock splits are reported and applied automatically, so your position keeps its value." />
+          <Safe title="Open source and tested" body="Every contract is public on GitHub and tested against thousands of random scenarios." />
         </div>
       </section>
 
-      {/* Final Call to Action */}
-      <section className="cta">
-        <Mark size={56} />
-        <h2>Experience the Future of RWA Fixed Income on Base</h2>
-        <div className="hero-ctas">
-          <Link to="/markets" className="btn btn-primary btn-lg">Explore B20 Markets</Link>
-          <Link to="/architecture" className="btn btn-lg">Read Technical Specs</Link>
+      {/* FAQ */}
+      <section className="section" id="faq">
+        <div className="faq">
+          <div className="section-h">
+            <span className="eyebrow">Questions</span>
+            <h2>Good to know</h2>
+            <p>Still curious? The <a className="link" href={DOCS_URL} target="_blank" rel="noreferrer">docs</a> go deeper.</p>
+          </div>
+          <div className="faq-list">
+            <Faq q="What is a tokenized stock?">
+              A token on a blockchain that tracks one share of a real company, like Apple or the SPY ETF. On Base, dividends are reinvested into the
+              token automatically, so each token slowly grows into more than one share.
+            </Faq>
+            <Faq q="Where does the discount come from?">
+              From the dividends. When you buy at a discount, you buy the share without its dividends until your chosen date. The person who sold
+              those dividends upfront was paid for them, which is why your price is lower.
+            </Faq>
+            <Faq q="What happens on the maturity date?">
+              Discount buyers redeem for their shares. Shareholders who took dividends upfront redeem for the shares they deposited. Dividend-token
+              holders keep everything they've collected.
+            </Faq>
+            <Faq q="What if the company cuts or raises its dividend?">
+              Discount buyers and upfront sellers are unaffected: their numbers were fixed on day one. Whoever holds the dividend tokens gains if
+              dividends rise and loses if they fall.
+            </Faq>
+            <Faq q="Can I sell before the date?">
+              You can rejoin a share token with a dividend token at any time to get the share back. A market for selling share tokens on their own
+              is coming; until then, plan to hold to the date.
+            </Faq>
+            <Faq q="What does it cost?">
+              Splitting a share costs 0.05%. Trades pay a 0.3% pool fee to liquidity providers. Xero keeps 3% of the dividends collected by dividend
+              tokens. Base network fees are usually under a cent.
+            </Faq>
+            <Faq q="Is my money at risk?">
+              Yes. Share prices move, smart contracts can have bugs, and dividends are never guaranteed. Xero currently runs on Base Sepolia, a test
+              network, using test tokens with no real value.
+            </Faq>
+          </div>
+        </div>
+      </section>
+
+      <section className="cta-band">
+        <div>
+          <Guilloche size={620} />
+          <div>
+            <h2>Try Xero with free test tokens</h2>
+            <p>Claim test versions of six stocks and ETFs, then buy at a discount or take dividends upfront. It takes about a minute.</p>
+          </div>
+          <Link to="/discount" className="btn btn-lg">Open the app</Link>
         </div>
       </section>
     </div>
   )
 }
 
-function DecompositionCard({ asset, market }: { asset: Asset; market: Market }) {
-  const px = toNum(asset.priceUsd)
-  const ptUsd = toNum(market.ptPrice) * px
-  const ytUsd = toNum(market.ytPrice) * px
-  const total = ptUsd + ytUsd
+// ------------------------------------------------------------------ hero quote
+
+function QuoteCard({ assets }: { assets: Asset[] }) {
+  const [mode, setMode] = useState<'discount' | 'upfront'>('discount')
+  const [sym, setSym] = useState('SCHDc')
+  const asset = assets.find((a) => a.symbol === sym) ?? assets[0]
+  const m = asset && yearMarket(asset)
 
   return (
-    <motion.div className="decomp" initial={{ y: 12 }} animate={{ y: 0 }} transition={{ duration: 0.6 }}>
-      <div className="decomp-head">
-        <MarketIcon symbol={asset.symbol} />
-        <div>
-          <b>{asset.symbol} · {market.label} Tenor</b>
-          <span>{asset.name} · Matures {date(market.maturity)}</span>
-        </div>
-        <span className="base-tag">BASE</span>
+    <div className="quote" aria-live="polite">
+      <div className="quote-tabs" role="tablist">
+        <button role="tab" aria-selected={mode === 'discount'} className={mode === 'discount' ? 'on' : ''} onClick={() => setMode('discount')}>Buy at a discount</button>
+        <button role="tab" aria-selected={mode === 'upfront'} className={`gold-tab ${mode === 'upfront' ? 'on' : ''}`} onClick={() => setMode('upfront')}>Dividends upfront</button>
       </div>
-
-      <div className="decomp-bar" aria-label="Value split">
-        <motion.div
-          className="bar-pt"
-          initial={{ width: '100%' }}
-          animate={{ width: `${(ptUsd / total) * 100}%` }}
-          transition={{ delay: 0.4, duration: 0.8, ease: 'easeOut' }}
-        />
-        <motion.div
-          className="bar-yt"
-          initial={{ width: 0 }}
-          animate={{ width: `${Math.max(4, (ytUsd / total) * 100)}%` }}
-          transition={{ delay: 0.4, duration: 0.8, ease: 'easeOut' }}
-        />
+      <div className="quote-body">
+        <div className="quote-stocks" role="radiogroup" aria-label="Stock">
+          {assets.map((a) => (
+            <button key={a.symbol} role="radio" aria-checked={a.symbol === asset?.symbol} className={a.symbol === asset?.symbol ? 'on' : ''} onClick={() => setSym(a.symbol)}>
+              {ticker(a.symbol)}
+            </button>
+          ))}
+        </div>
+        {asset && m ? (
+          <>
+            <div className="quote-company">
+              <StockMark symbol={asset.symbol} size={40} />
+              <div>
+                <b>{company(asset.symbol)}</b>
+                <span>{ticker(asset.symbol)} · {term(m.label)}, until {date(m.maturity)}</span>
+              </div>
+            </div>
+            {mode === 'discount' ? (
+              <>
+                <div className="quote-prices">
+                  <div><small>Market price</small><span className="was">{usd(m.unitUsd)}</span></div>
+                  <span className="arrow" aria-hidden="true">→</span>
+                  <div><small>Your price</small><span className="now">{usd(m.ptUsd)}</span></div>
+                </div>
+                <div className="quote-facts">
+                  <div><span>You save</span><b className="up">{m.ptDiscountPct.toFixed(2)}%</b></div>
+                  <div><span>You receive</span><b>1 share on {date(m.maturity)}</b></div>
+                  <div><span>Return if the price holds</span><b>{pct(m.ptFixedYield / 100)} a year</b></div>
+                </div>
+                <Link to={`/discount?s=${asset.symbol}&m=${m.label}`} className="btn btn-primary btn-block btn-lg">Buy {ticker(asset.symbol)} at {usd(m.ptUsd)}</Link>
+              </>
+            ) : (
+              <>
+                <div className="quote-paid">
+                  <small>Paid today for 100 shares</small>
+                  <strong>{usd(m.ytUsd * 100)}</strong>
+                </div>
+                <div className="quote-facts">
+                  <div><span>For their dividends until</span><b>{date(m.maturity)}</b></div>
+                  <div><span>Your shares back on</span><b>{date(m.maturity)}</b></div>
+                  <div><span>Upfront, as a share of your position</span><b className="gold">{m.ptDiscountPct.toFixed(2)}%</b></div>
+                </div>
+                <Link to={`/upfront?s=${asset.symbol}&m=${m.label}`} className="btn btn-gold btn-block btn-lg">Get {ticker(asset.symbol)} dividends now</Link>
+              </>
+            )}
+          </>
+        ) : (
+          <ExampleSkeleton />
+        )}
       </div>
-
-      <div className="decomp-rows">
-        <div>
-          <span><TokenIcon symbol="PT" kind="pt" size={20} /> Principal Token</span>
-          <b>{usd(ptUsd)}</b>
-          <small className="up">−{market.ptDiscountPct.toFixed(1)}% Discount</small>
-        </div>
-        <div className="y">
-          <span><TokenIcon symbol="YT" kind="yt" size={20} /> Yield Token</span>
-          <b>{usd(ytUsd)}</b>
-          <small className="amber">{market.ytLeverage.toFixed(0)}x Leverage</small>
-        </div>
-        <div className="decomp-total">
-          <span>1 B20 Unit</span>
-          <b>{usd(total)}</b>
-          <small>Multiplier: {toNum(asset.multiplier).toFixed(4)}x</small>
-        </div>
-      </div>
-
-      <div className="decomp-foot">
-        <div>
-          <span>Implied Dividend APY</span>
-          <b className="amber">{pct(market.impliedYield)}</b>
-        </div>
-        <div>
-          <span>PT Fixed Return</span>
-          <b className="up">{market.ptFixedYield.toFixed(2)}%</b>
-        </div>
-      </div>
-
-      <div className="decomp-cta-row">
-        <Link to={`/markets/${asset.symbol}?m=${market.label}`} className="btn btn-primary btn-block">
-          Trade {asset.symbol} Primitives
-        </Link>
-      </div>
-    </motion.div>
-  )
-}
-
-function HeroMark() {
-  return (
-    <motion.div className="hero-mark" initial={{ rotate: -8 }} animate={{ rotate: 0 }} transition={{ duration: 0.8 }}>
-      <Mark size={260} />
-    </motion.div>
-  )
-}
-
-function Kpi({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div className="kpi">
-      <span>{label}</span>
-      <b className={accent ? 'amber' : undefined}>{value}</b>
     </div>
   )
 }
 
-function Step({ n, title, body, icon }: { n: string; title: string; body: string; icon: React.ReactNode }) {
+// ------------------------------------------------------------------ worked examples (live numbers)
+
+function DiscountExample({ asset, market: m }: { asset: Asset; market: Market }) {
+  const n = 10
   return (
-    <div className="step">
-      <div className="step-icon">{icon}</div>
-      <span className="step-n">{n}</span>
-      <h3>{title}</h3>
-      <p>{body}</p>
+    <div className="example">
+      <div className="example-h"><b>Example: {n} shares of {ticker(asset.symbol)}</b><span className="tag">Live price</span></div>
+      <Step n="1" title="Today, you pay" sub={`${n} × ${usd(m.ptUsd)} instead of ${usd(m.unitUsd)}`} v={usd(m.ptUsd * n)} />
+      <Step n="2" title="Until the date" sub="You hold a token that becomes your shares" v="—" />
+      <Step n="3" title={`On ${date(m.maturity)}, you own`} sub={`Worth ${usd(m.unitUsd * n)} at today's price`} v={`${n} shares`} />
+      <div className="example-foot">You saved <b className="up">{usd((m.unitUsd - m.ptUsd) * n)}</b> versus buying today, a {pct(m.ptFixedYield / 100)} yearly return if the price holds.</div>
     </div>
   )
 }
 
-function Use({ tag, title, body, link }: { tag: string; title: string; body: string; link: string }) {
+function UpfrontExample({ asset, market: m }: { asset: Asset; market: Market }) {
+  const n = 100
   return (
-    <Link to={link} className="use card-link-use">
-      <span className="tag">{tag}</span>
-      <h3>{title}</h3>
-      <p>{body}</p>
-      <span className="use-cta-link">Explore →</span>
-    </Link>
+    <div className="example">
+      <div className="example-h"><b>Example: you own {n} {ticker(asset.symbol)}</b><span className="tag">Live price</span></div>
+      <Step n="1" title="Today, you're paid" sub={`For their dividends until ${date(m.maturity)}`} v={usd(m.ytUsd * n)} />
+      <Step n="2" title="Until the date" sub="Your shares rise and fall with the market, as before" v="—" />
+      <Step n="3" title={`On ${date(m.maturity)}, you get back`} sub="Every share you deposited" v={`${n} shares`} />
+      <div className="example-foot">That's <b className="gold">{m.ptDiscountPct.toFixed(2)}%</b> of your position paid upfront, with no loan and nothing to repay.</div>
+    </div>
+  )
+}
+
+function Anatomy({ asset, market: m }: { asset: Asset; market: Market }) {
+  const ytShare = Math.max(8, (m.ytUsd / m.unitUsd) * 100)
+  return (
+    <div>
+      <div className="anatomy-bar" role="img" aria-label={`One ${ticker(asset.symbol)} share: ${usd(m.ptUsd)} share token plus ${usd(m.ytUsd)} dividend token`}>
+        <div className="pt" style={{ flex: `${100 - ytShare} 1 0` }}>Share · {usd(m.ptUsd)}</div>
+        <div className="yt" style={{ flex: `${ytShare} 1 0` }}>{usd(m.ytUsd)}</div>
+      </div>
+      <div className="anatomy-legend">
+        <div>
+          <span className="k"><i className="swatch swatch-pt" /> Share token</span>
+          <b>{usd(m.ptUsd)}</b>
+          <span>Becomes one {ticker(asset.symbol)} share on {date(m.maturity)}</span>
+        </div>
+        <div>
+          <span className="k"><i className="swatch swatch-yt" /> Dividend token</span>
+          <b>{usd(m.ytUsd)}</b>
+          <span>Collects every dividend until then</span>
+        </div>
+      </div>
+      <p className="hint" style={{ marginTop: 14 }}>
+        Live, for {company(asset.symbol)}: {usd(m.ptUsd)} + {usd(m.ytUsd)} = {usd(m.unitUsd)}, the price of one share.
+      </p>
+    </div>
+  )
+}
+
+// ------------------------------------------------------------------ small parts
+
+function Step({ n, title, sub, v }: { n: string; title: string; sub: string; v: string }) {
+  return (
+    <div className="timeline-step">
+      <i>{n}</i>
+      <div><b>{title}</b><span>{sub}</span></div>
+      <strong>{v}</strong>
+    </div>
+  )
+}
+
+function Point({ title, body }: { title: string; body: string }) {
+  return (
+    <li>
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="10" cy="10" r="8" />
+        <path d="M6.5 10.2l2.4 2.3 4.6-4.8" />
+      </svg>
+      <div><b>{title}</b><span>{body}</span></div>
+    </li>
   )
 }
 
 function Safe({ title, body }: { title: string; body: string }) {
   return (
-    <div className="safe">
-      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-        <path d="M10 2l6 2.5v5c0 4-2.7 6.8-6 8.5-3.3-1.7-6-4.5-6-8.5v-5L10 2z" fill="none" stroke="var(--base-blue, #0052FF)" strokeWidth="1.6" />
-        <path d="M7 10l2 2 4-4" fill="none" stroke="var(--base-blue, #0052FF)" strokeWidth="1.6" />
+    <div>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" aria-hidden="true">
+        <path d="M12 2.5l7.5 3v6c0 5-3.4 8.4-7.5 10-4.1-1.6-7.5-5-7.5-10v-6l7.5-3z" />
+        <path d="M8.5 12l2.5 2.5 4.5-5" strokeLinecap="round" />
       </svg>
-      <h3>{title}</h3>
+      <b>{title}</b>
       <p>{body}</p>
     </div>
   )
+}
+
+function Faq({ q, children }: { q: string; children: React.ReactNode }) {
+  return (
+    <details>
+      <summary>{q}</summary>
+      <p>{children}</p>
+    </details>
+  )
+}
+
+function ExampleSkeleton() {
+  return <div className="example"><span className="skeleton" style={{ width: '100%', height: 220 }} /></div>
 }

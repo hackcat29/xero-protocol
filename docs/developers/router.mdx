@@ -1,0 +1,98 @@
+---
+title: "XeroRouter"
+description: "One-transaction flows for buying at a discount and taking dividends upfront."
+---
+
+The router combines vault and market calls so users sign one transaction. It's stateless: every function ends with zero router balances. Approve the router to spend the tokenized stock before calling.
+
+## buyPrincipal
+
+Buy share tokens (PT) with the tokenized stock. This is **Buy at a discount**.
+
+```solidity
+function buyPrincipal(
+    XeroVault vault,
+    XeroYieldMarket market,
+    uint256 raw,
+    uint256 minUnitsOut,
+    address to
+) external returns (uint256 units, uint256 refund);
+```
+
+<ParamField path="vault" type="address" required>The vault for the stock and maturity.</ParamField>
+<ParamField path="market" type="address" required>That vault's dividend market. Must match, or the call reverts with `MarketMismatch`.</ParamField>
+<ParamField path="raw" type="uint256" required>Tokenized stock to spend, 18 decimals.</ParamField>
+<ParamField path="minUnitsOut" type="uint256" required>Minimum PT units to receive, or the call reverts with `InsufficientOutput`.</ParamField>
+<ParamField path="to" type="address" required>Receives the PT and any refund.</ParamField>
+
+<ResponseField name="units" type="uint256">PT units delivered. One unit redeems for one share's worth of the stock at maturity.</ResponseField>
+<ResponseField name="refund" type="uint256">Tokenized stock returned: the last round's proceeds, below 1 bp of `raw`.</ResponseField>
+
+The router strips `raw`, sells the YT for stock, strips the proceeds again, and repeats while a round's proceeds are at least 1 bp of `raw`, up to four rounds. `raw` therefore buys about `raw × I ÷ (1 − d)` PT units, where `d` is the discount. Intermediate swaps take no minimum; `minUnitsOut` protects the whole trade.
+
+### Quoting off-chain
+
+Mirror the loop with view calls:
+
+```ts
+async function quoteBuyPrincipal(vault, market, raw) {
+  let units = 0n, left = raw
+  for (let i = 0; i < 4 && left * 10_000n >= raw; i++) {
+    const u = await read(vault, 'previewStrip', [left])
+    if (u === 0n) break
+    units += u
+    ;[left] = await read(market, 'quoteYtForQuote', [u])
+  }
+  return { units, refund: left }
+}
+```
+
+Each `quoteYtForQuote` reads the pool before the previous round's sale, so this slightly overstates later rounds. Those rounds are a few percent of the first, so a 0.5% `minUnitsOut` buffer covers it comfortably.
+
+## stripAndSellYield
+
+Split the tokenized stock, keep the PT, and sell the YT. This is **Dividends upfront**.
+
+```solidity
+function stripAndSellYield(
+    XeroVault vault,
+    XeroYieldMarket market,
+    uint256 raw,
+    uint256 minQuoteOut,
+    address to
+) external returns (uint256 units, uint256 quoteOut);
+```
+
+<ResponseField name="units" type="uint256">PT units delivered to `to`.</ResponseField>
+<ResponseField name="quoteOut" type="uint256">Tokenized stock paid to `to` for the YT: the upfront dividends.</ResponseField>
+
+Quote with `vault.previewStrip(raw)` followed by `market.quoteYtForQuote(units)`.
+
+## strip
+
+```solidity
+function strip(XeroVault vault, uint256 raw, address to) external returns (uint256 units);
+```
+
+Split and deliver both PT and YT to `to`.
+
+## exit
+
+```solidity
+function exit(XeroVault vault, uint256 units, address to) external returns (uint256 raw, uint256 yield_);
+```
+
+Before maturity: claim the caller's accrued dividends, then recombine `units` of PT and YT into the stock. Approve the router for both PT and YT first.
+
+## Multicall and permits
+
+The router inherits OpenZeppelin `Multicall`, and `selfPermit(token, value, deadline, v, r, s)` lets you batch an ERC-2612 permit with a flow. Failed permits are ignored so a front-run permit can't block the batch.
+
+## Errors
+
+| Error | Meaning |
+| --- | --- |
+| `UnknownVault()` | The vault isn't registered with the factory |
+| `MarketMismatch()` | The market doesn't belong to the vault |
+| `InsufficientOutput()` | `buyPrincipal` delivered fewer than `minUnitsOut` |
+| `Slippage()` | A market swap missed its minimum (from `XeroYieldMarket`) |

@@ -1,0 +1,57 @@
+---
+title: "Introduction"
+description: "Xero is the first platform to split tokenized stocks into the share and its dividends."
+---
+
+Xero lets you trade a stock's dividends separately from the stock itself. That opens up two things that ordinary brokerage accounts can't do:
+
+<CardGroup cols={2}>
+  <Card title="Buy stocks at a discount" icon="tag" href="/guides/buy-at-a-discount">
+    Pay less than today's price for a share delivered on a date you choose. The discount is what the dividends until then are worth.
+  </Card>
+  <Card title="Get dividends in advance" icon="hand-holding-dollar" href="/guides/dividends-upfront">
+    Own a dividend stock? Sell its next year of dividends today, get paid now, and get every share back on the date you pick.
+  </Card>
+</CardGroup>
+
+## How it works, in one paragraph
+
+A share's price includes the dividends people expect it to pay. Xero holds tokenized shares in a vault and issues two tokens against each one: a **share token** that becomes the share on a set date (the *maturity*), and a **dividend token** that collects every dividend until then. The two always add up to exactly one share, and anyone holding both can rejoin them into the share at any time before maturity. Because each part has its own market price, you can buy just the share (cheaper than the whole) or sell just the dividends (money upfront).
+
+```text
+One SCHD share          $28.40
+ = share token          $27.39   becomes 1 SCHD share on Oct 15, 2027
+ + dividend token        $1.01   collects every SCHD dividend until then
+```
+
+<Note>
+  Prices above are a live example from Base Sepolia. Xero currently runs on **Base Sepolia**, a test network, with test versions of six stocks and ETFs. Test tokens have no monetary value.
+</Note>
+
+## Who it's for
+
+- **Long-term investors** who don't need dividend income this year and would rather pay less for the share.
+- **Shareholders** who want their dividends now, as a lump sum, without selling their stock or taking a loan.
+- **Dividend traders** who think a company's payout will beat expectations, and want exposure to the dividends alone.
+- **Liquidity providers** who earn trading fees plus the dividends held in each pool.
+
+## What makes Xero different
+
+<AccordionGroup>
+  <Accordion title="Built for how tokenized stocks pay dividends">
+    Tokenized stocks on Base don't send you cash dividends. They reinvest them: each token quietly grows into a little more than one share. Xero measures that growth and pays it to dividend-token holders, while separating out stock splits so they're never mistaken for dividends.
+  </Accordion>
+  <Accordion title="Fully backed, always exit-able">
+    Every share token and dividend token is backed one-for-one by tokenized shares in the vault. Emergency controls can stop new deposits and trading, but never stop you rejoining, redeeming or claiming.
+  </Accordion>
+  <Accordion title="Prices from a market, not a formula">
+    The discount comes from a live market where people trade the dividends. It reflects what traders expect each company to pay, and it updates with every trade.
+  </Accordion>
+</AccordionGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">Claim test tokens and make your first trade in a few minutes.</Card>
+  <Card title="Developers" icon="code" href="/developers/overview">Contracts, addresses and how to read Xero's data.</Card>
+</CardGroup>

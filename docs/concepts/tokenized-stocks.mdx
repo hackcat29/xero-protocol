@@ -1,0 +1,36 @@
+---
+title: "Tokenized stocks"
+description: "What a tokenized stock is, and how it pays dividends on Base."
+---
+
+A tokenized stock is a token that tracks a real company's shares. It moves between wallets like any other token, settles in seconds, and trades around the clock on-chain.
+
+## Dividends are reinvested, not paid out
+
+Ordinary shares pay dividends in cash. Tokenized stocks on Base don't send you anything. Instead, each token keeps a **multiplier**: the number of shares one token represents. When the company pays a dividend, the issuer uses it to buy more shares and raises the multiplier.
+
+```text
+Before a $0.25 dividend on a $28.40 share:   1 SCHDc = 1.0345 shares
+After the dividend is reinvested:            1 SCHDc = 1.0436 shares
+```
+
+Your token balance stays the same; what each token is worth goes up. This is why the app shows `1 SCHDc = 1.0345 shares` next to every order: a tokenized share that has been around a while holds a bit more than one share.
+
+## Splits use the same multiplier
+
+A 2-for-1 stock split also doubles the multiplier, even though nobody received anything of value. Xero has to tell the two apart, so that a split is never paid out as if it were a huge dividend. It does this with a separate record of corporate actions, reported by independent keepers. See [Corporate actions](/developers/corporate-actions).
+
+## The stocks on Xero today
+
+| Ticker | Company | Token | Pays dividends |
+| --- | --- | --- | --- |
+| SCHD | Schwab U.S. Dividend Equity ETF | `SCHDc` | Yes, about 3.5% a year |
+| SPY | SPDR S&P 500 ETF | `SPYc` | Yes, about 1.2% a year |
+| AAPL | Apple | `AAPLc` | Yes, about 0.5% a year |
+| NVDA | NVIDIA | `NVDAc` | Yes, about 0.1% a year |
+| TSLA | Tesla | `TSLAc` | No |
+| COIN | Coinbase | `COINc` | No |
+
+<Note>
+  On Base Sepolia these are test tokens issued by Xero to simulate tokenized stocks, priced by test price feeds. Markets for stocks that pay no dividend still trade, at whatever traders expect the company to pay.
+</Note>

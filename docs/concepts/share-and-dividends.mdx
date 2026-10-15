@@ -1,0 +1,44 @@
+---
+title: "One share, two parts"
+description: "How Xero splits a tokenized share into a share token and a dividend token."
+---
+
+Xero keeps one **vault** per stock and maturity date, for example "SCHD, October 15, 2027". When you deposit tokenized shares, the vault issues two tokens in equal amounts:
+
+<CardGroup cols={2}>
+  <Card title="Share token" icon="certificate">
+    Becomes the share on the maturity date. Redeem it then for the shares you deposited (or bought). Technical name: principal token, `PT`.
+  </Card>
+  <Card title="Dividend token" icon="coins">
+    Collects every dividend paid until the maturity date, claimable at any time. Technical name: yield token, `YT`.
+  </Card>
+</CardGroup>
+
+One share token plus one dividend token is always worth exactly one share. Hold both and you can **rejoin** them into the share at any time before maturity. After maturity the share token redeems on its own.
+
+## Units
+
+Both tokens are counted in **units**, and one unit is one share at the moment you deposit. If you deposit 100 `SCHDc` while each holds 1.0345 shares, you get about 103.45 units of each token (minus the 0.05% split fee).
+
+## What each token receives
+
+<Tabs>
+  <Tab title="Share token">
+    At maturity, each unit redeems for the tokenized shares worth one share. The dividends paid between deposit and maturity are not included; they went to the dividend token.
+
+    After maturity, any further dividends stay with the share token, because it has become the share.
+  </Tab>
+  <Tab title="Dividend token">
+    Every time a dividend is reinvested into the tokenized stock, the vault credits each dividend-token unit with its share of the new shares, in `SCHDc`. You can claim at any time; claims never expire.
+
+    Xero keeps 3% of what dividend tokens collect as its protocol fee.
+  </Tab>
+</Tabs>
+
+## Why it's always fully backed
+
+The vault never lends, stakes or moves the shares it holds. What it owes share-token holders plus what it owes dividend-token holders always equals what was deposited, at every block. This is checked in the contracts and tested against thousands of random sequences of deposits, dividends and splits.
+
+## Stock splits
+
+A split changes how many shares a token represents without anyone gaining value. Once a split is reported by Xero's keepers, the vault divides it out, so dividend-token holders are credited only real dividends and share-token holders keep exactly the same value. Until a split is reported, the vault pauses new deposits and dividend crediting rather than guess. Rejoining and claiming dividends already collected keep working throughout; redemption at maturity resumes once the split is reported.

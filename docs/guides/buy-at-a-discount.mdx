@@ -1,0 +1,61 @@
+---
+title: "Buy at a discount"
+description: "Pay less than today's price for a share delivered on a date you choose."
+---
+
+Buying at a discount gets you a stock for less than its market price, in exchange for waiting until a date you choose. You skip the dividends paid until then. That's where the discount comes from.
+
+## Example
+
+SCHD trades at $28.40. Its 1-year share token costs $27.39.
+
+| | |
+| --- | --- |
+| You pay today | $27.39 per share |
+| You receive on Oct 15, 2027 | 1 SCHD share per token |
+| Discount | 3.55% |
+| Return if the price is unchanged | about 3.68% a year |
+
+If SCHD rises 10% by then, your share is worth 10% more, the same as if you'd bought it today, and you still keep the discount.
+
+## How to buy
+
+<Steps>
+  <Step title="Choose a stock and a date">
+    Open **Buy at a discount**. Each card shows today's price, your price and the discount for the selected maturity. Longer maturities give bigger discounts.
+  </Step>
+  <Step title="Enter the amount">
+    You pay in the tokenized stock itself (for example `SCHDc`). The ticket shows how many shares you'll receive at maturity and what they're worth at today's price.
+  </Step>
+  <Step title="Confirm">
+    The first time, your wallet asks you to approve the token. Then confirm the purchase. The order is cancelled automatically if the price moves more than your **Price protection** setting.
+  </Step>
+  <Step title="Redeem at maturity">
+    On the maturity date, open **Portfolio** and select **Redeem** to swap your share tokens for the shares.
+  </Step>
+</Steps>
+
+## What happens under the hood
+
+The app calls `buyPrincipal` on the Xero router, which in a single transaction:
+
+1. Splits your tokenized shares into share tokens and dividend tokens.
+2. Sells the dividend tokens on the dividend market for more tokenized shares.
+3. Splits those proceeds again, and repeats until what's left is under 0.01% of your order (at most four rounds).
+4. Sends you all the share tokens, plus any small remainder of the tokenized stock.
+
+The result is about `amount ÷ (1 − discount)` worth of shares at maturity. See the [router reference](/developers/router).
+
+## Things to know
+
+<AccordionGroup>
+  <Accordion title="You don't receive dividends until maturity">
+    That's the trade-off. After maturity, the share is yours in full, including its future dividends.
+  </Accordion>
+  <Accordion title="Selling before maturity">
+    There's no market for share tokens on their own yet, so plan to hold until maturity. If you also hold the matching dividend tokens, you can rejoin the two into the stock at any time.
+  </Accordion>
+  <Accordion title="Why is the discount on Tesla or Coinbase not zero?">
+    Neither pays a dividend. Their discount reflects what traders on Xero are pricing in, which on the test network starts at a small default. On mainnet it would trade toward zero.
+  </Accordion>
+</AccordionGroup>

@@ -4,16 +4,19 @@ import { useDeferredValue, useMemo, useState, type ReactNode } from 'react'
 import type { Address } from 'viem'
 import { useAccount, useReadContract } from 'wagmi'
 import { AmountInput } from './AmountInput'
+import { TestTokensButton } from './DevConsole'
 import { Info } from './Info'
 import { WalletButton } from './Nav'
-import { WAD, amount, date, duration, parse, pct, toNum, usd } from '../lib/format'
-import { abis, book, read } from '../lib/network'
+import { WAD, amount, date, parse, pct, toNum, usd } from '../lib/format'
+import { ptName, ticker, ytName } from '../lib/assets'
+import { abis, book, isDemo, read } from '../lib/network'
 import type { Asset, Market } from '../lib/protocol'
 import { ACCOUNT_PLACEHOLDER, useTx } from '../lib/tx'
 
-type Props = { asset: Asset; market: Market; now: number }
+/** Stands for the connected account in call arguments; useTx substitutes it before simulating. */
+const ACCOUNT = ACCOUNT_PLACEHOLDER
 
-function useBalance(token: Address | undefined) {
+export function useBalance(token: Address | undefined) {
   const { address } = useAccount()
   const { data } = useReadContract({
     address: token,
@@ -28,50 +31,43 @@ function useBalance(token: Address | undefined) {
 /** On-chain quote. The previous result stays visible while refetching, but `fresh` is only true once the
  *  quote matches the current input and chain state; submissions must use fresh quotes only. */
 function useQuote<T>(key: unknown[], enabled: boolean, fn: () => Promise<T>) {
-  const q = useQuery({ queryKey: ['quote', ...key], queryFn: fn, enabled, retry: false, staleTime: 3_000, placeholderData: (p) => p })
+  const q = useQuery({
+    queryKey: ['quote', ...key],
+    queryFn: fn,
+    enabled,
+    // retry dropped RPC requests, but not reverts (e.g. a trade larger than the pool)
+    retry: (n, e) => n < 3 && !/revert/i.test(String((e as Error)?.message)),
+    retryDelay: 600,
+    staleTime: 3_000,
+    placeholderData: (p) => p,
+  })
   return { ...q, fresh: enabled && q.data !== undefined && !q.isPlaceholderData && !q.isFetching }
 }
 
-const SLIPPAGES = [10n, 50n, 100n] // bps
-
-export function TradeTicket({ asset, market, now }: Props) {
-  const [tab, setTab] = useState(market.matured ? 'redeem' : 'yield')
-  const [slip, setSlip] = useState(50n)
-  return (
-    <section className="card ticket">
-      <Tabs.Root value={market.matured && tab !== 'redeem' && tab !== 'pool' ? 'redeem' : tab} onValueChange={setTab}>
-        <Tabs.List className="ticket-tabs" aria-label="Actions">
-          <Tabs.Trigger value="yield" disabled={market.matured}>Yield</Tabs.Trigger>
-          <Tabs.Trigger value="fix" disabled={market.matured}>Fix</Tabs.Trigger>
-          <Tabs.Trigger value="strip" disabled={market.matured}>Strip</Tabs.Trigger>
-          <Tabs.Trigger value="redeem">Redeem</Tabs.Trigger>
-          <Tabs.Trigger value="pool">Pool</Tabs.Trigger>
-        </Tabs.List>
-        <div className="ticket-body">
-          <Tabs.Content value="yield"><YieldTab {...{ asset, market, slip }} /></Tabs.Content>
-          <Tabs.Content value="fix"><FixTab {...{ asset, market, slip }} /></Tabs.Content>
-          <Tabs.Content value="strip"><StripTab {...{ asset, market }} /></Tabs.Content>
-          <Tabs.Content value="redeem"><RedeemTab {...{ asset, market, now }} /></Tabs.Content>
-          <Tabs.Content value="pool"><PoolTab {...{ asset, market }} /></Tabs.Content>
-        </div>
-      </Tabs.Root>
-      <div className="ticket-foot">
-        <span>Slippage</span>
-        <div className="seg seg-sm" role="radiogroup" aria-label="Slippage tolerance">
-          {SLIPPAGES.map((s) => (
-            <button key={s} role="radio" aria-checked={slip === s} className={slip === s ? 'on' : ''} onClick={() => setSlip(s)}>
-              {Number(s) / 100}%
-            </button>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
+const minOut = (v: bigint, slip: bigint) => (v * (10_000n - slip)) / 10_000n
+const usdOf = (raw: bigint, asset: Asset) => (asset.priceFresh ? usd(toNum(raw) * toNum(asset.priceUsd)) : undefined)
+const shares = (units: bigint) => toNum(units).toLocaleString('en-US', { maximumFractionDigits: 4 })
 
 // ------------------------------------------------------------------ shared bits
 
-function Row({ k, v, tip, tone }: { k: string; v: ReactNode; tip?: ReactNode; tone?: 'up' | 'down' }) {
+export const SLIPPAGES = [10n, 50n, 100n] // bps
+
+export function SlippagePicker({ slip, setSlip }: { slip: bigint; setSlip: (s: bigint) => void }) {
+  return (
+    <div className="ticket-foot">
+      <Info tip="The most the price may move against you between quoting and confirming. The trade cancels if it moves further.">Price protection</Info>
+      <div className="seg seg-sm" role="radiogroup" aria-label="Price protection">
+        {SLIPPAGES.map((s) => (
+          <button key={s} role="radio" aria-checked={slip === s} className={slip === s ? 'on' : ''} onClick={() => setSlip(s)}>
+            {Number(s) / 100}%
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function Row({ k, v, tip, tone }: { k: string; v: ReactNode; tip?: ReactNode; tone?: 'up' | 'down' | 'gold' }) {
   return (
     <div className="row">
       <span>{tip ? <Info tip={tip}>{k}</Info> : k}</span>
@@ -80,30 +76,170 @@ function Row({ k, v, tip, tone }: { k: string; v: ReactNode; tip?: ReactNode; to
   )
 }
 
-function Submit({ label, disabled, onClick, pending }: { label: string; disabled?: boolean; onClick: () => void; pending: boolean }) {
+function Submit({ label, disabled, onClick, pending, gold }: { label: string; disabled?: boolean; onClick: () => void; pending: boolean; gold?: boolean }) {
   const { address } = useAccount()
   if (!address) return <WalletButton block />
   return (
-    <button className="btn btn-primary btn-block btn-lg" disabled={disabled || pending} onClick={onClick}>
-      {pending ? 'Confirm in wallet…' : label}
+    <button className={`btn btn-lg btn-block ${gold ? 'btn-gold' : 'btn-primary'}`} disabled={disabled || pending} onClick={onClick}>
+      {pending ? 'Confirm in your wallet…' : label}
     </button>
   )
 }
 
-const usdOf = (raw: bigint, asset: Asset) => (asset.priceFresh ? usd(toNum(raw) * toNum(asset.priceUsd)) : undefined)
-const minOut = (v: bigint, slip: bigint) => (v * (10_000n - slip)) / 10_000n
+/** On testnet, an empty wallet gets a one-click way to claim test stock instead of a dead end. */
+function NeedTokens({ asset, balance }: { asset: Asset; balance: bigint }) {
+  const { address } = useAccount()
+  if (!isDemo || !address || balance > 0n) return null
+  return (
+    <p className="need-tokens">
+      No {asset.symbol} in this wallet yet. <TestTokensButton label="Get free test tokens" className="" />
+    </p>
+  )
+}
 
-// ------------------------------------------------------------------ Yield: buy / sell YT
+function Closed({ market }: { market: Market }) {
+  if (market.matured) return <p className="banner">This maturity has ended. Use Redeem to collect your shares.</p>
+  if (market.frozen) return <p className="banner banner-warn">Paused while a corporate action is confirmed. Existing positions can still exit.</p>
+  if (market.halted) return <p className="banner banner-warn">New deposits are paused for this stock. Existing positions can still exit.</p>
+  return null
+}
 
-function YieldTab({ asset, market, slip }: { asset: Asset; market: Market; slip: bigint }) {
+// ------------------------------------------------------------------ Buy at a discount
+
+/** Mirrors XeroRouter.buyPrincipal: strip, sell the dividends, reinvest the proceeds, up to four rounds. */
+async function quoteBuyPrincipal(market: Market, raw: bigint) {
+  let units = 0n
+  let left = raw
+  for (let i = 0; i < 4 && left * 10_000n >= raw; i++) {
+    const u = await read<bigint>(market.vault, abis.XeroVault, 'previewStrip', [left])
+    if (u === 0n) break
+    units += u
+    ;[left] = await read<readonly [bigint, bigint]>(market.market, abis.XeroYieldMarket, 'quoteYtForQuote', [u])
+  }
+  return { units, refund: left }
+}
+
+export function DiscountForm({ asset, market, slip }: { asset: Asset; market: Market; slip: bigint }) {
+  const [input, setInput] = useState('')
+  const value = parse(useDeferredValue(input))
+  const bal = useBalance(asset.token)
+  const { run, pending } = useTx()
+  const open = market.live && !market.frozen && !market.halted
+  const q = useQuote(['discount', market.vault, value.toString()], open && value > 0n, () => quoteBuyPrincipal(market, value))
+  const units = q.data?.units ?? 0n
+  const spent = value - (q.data?.refund ?? 0n)
+  const worthToday = toNum(units) * toNum(asset.sharePriceUsd)
+  const costUsd = toNum(spent) * toNum(asset.priceUsd)
+  const discount = units > 0n && worthToday > 0 ? 1 - costUsd / worthToday : market.ptDiscountPct / 100
+  const years = toNum(market.tau)
+  const annual = years > 0 && discount < 1 ? discount / (1 - discount) / years : 0
+  const insufficient = value > bal
+
+  return (
+    <div className="stack">
+      <Closed market={market} />
+      <AmountInput label="You pay" value={input} onChange={setInput} symbol={asset.symbol} tokenLabel={asset.symbol} balance={bal} usd={usdOf(value, asset)} error={insufficient} />
+      <NeedTokens asset={asset} balance={bal} />
+      <div className="result">
+        <small>You receive on {date(market.maturity)}</small>
+        <strong>{units > 0n ? `${shares(units)} ${ticker(asset.symbol)} shares` : '—'}</strong>
+        <span>{units > 0n ? `Worth ${usd(worthToday)} at today's price` : `Shares of ${ticker(asset.symbol)}, delivered at maturity`}</span>
+      </div>
+      <div className="rows">
+        <Row k="Discount to today's price" v={pct(discount)} tone="up" tip="How much less you pay than the shares are worth today. Your price is locked in now." />
+        <Row k="Return if held to maturity" v={`${pct(annual)} a year`} tip="Your discount spread over the time to maturity, if the share price stays where it is today. You still gain or lose with the share price." />
+        <Row k="Minimum shares" v={units > 0n ? shares(minOut(units, slip)) : '—'} tip="The trade cancels rather than give you fewer shares than this." />
+        <Row k={`1 ${asset.symbol}`} v={`${toNum(asset.multiplier).toFixed(4)} shares`} tip={`Each tokenized share has reinvested the dividends it paid before today, so it holds a little more than one ${ticker(asset.symbol)} share.`} />
+      </div>
+      <Submit
+        label={!open ? 'Not available' : insufficient ? `Not enough ${asset.symbol}` : `Buy at ${pct(discount, 1)} off`}
+        disabled={!open || !q.fresh || insufficient || !book}
+        pending={pending}
+        onClick={async () => {
+          const ok = await run(
+            `Buy ${ticker(asset.symbol)} at a discount`,
+            [{ address: book!.router, abi: abis.XeroRouter, functionName: 'buyPrincipal', args: [market.vault, market.market, value, minOut(units, slip), ACCOUNT], label: 'Buy at a discount' }],
+            [{ token: asset.token, spender: book!.router, amount: value, symbol: asset.symbol }],
+          )
+          if (ok) setInput('')
+        }}
+      />
+      <p className="hint">
+        Until {date(market.maturity)} you hold a share token, then you redeem it for the shares. You skip the dividends paid until then;
+        that is where the discount comes from.
+      </p>
+    </div>
+  )
+}
+
+// ------------------------------------------------------------------ Dividends upfront
+
+export function UpfrontForm({ asset, market, slip }: { asset: Asset; market: Market; slip: bigint }) {
+  const [input, setInput] = useState('')
+  const value = parse(useDeferredValue(input))
+  const bal = useBalance(asset.token)
+  const { run, pending } = useTx()
+  const open = market.live && !market.frozen && !market.halted
+  const q = useQuote(['upfront', market.vault, value.toString()], open && value > 0n, async () => {
+    const units = await read<bigint>(market.vault, abis.XeroVault, 'previewStrip', [value])
+    const [paid] = await read<readonly [bigint, bigint]>(market.market, abis.XeroYieldMarket, 'quoteYtForQuote', [units])
+    return { units, paid }
+  })
+  const paid = q.data?.paid ?? 0n
+  const share = value > 0n && paid > 0n ? toNum(paid) / toNum(value) : market.ptDiscountPct / 100
+  const years = toNum(market.tau)
+  const insufficient = value > bal
+
+  return (
+    <div className="stack">
+      <Closed market={market} />
+      <AmountInput label="Shares you hold" value={input} onChange={setInput} symbol={asset.symbol} tokenLabel={asset.symbol} balance={bal} usd={usdOf(value, asset)} error={insufficient} />
+      <NeedTokens asset={asset} balance={bal} />
+      <div className="result is-gold">
+        <small>Paid to you today</small>
+        <strong>{paid > 0n ? usdOf(paid, asset) ?? `${amount(paid)} ${asset.symbol}` : '—'}</strong>
+        <span>{paid > 0n ? `${amount(paid)} ${asset.symbol}, yours to keep or sell` : `Paid in ${asset.symbol}, straight to your wallet`}</span>
+      </div>
+      <div className="rows">
+        <Row k="Your shares back on" v={date(market.maturity)} tip="Your shares stay in the Xero vault until then and return in full. You still gain or lose with the share price." />
+        <Row k="Shares returned" v={q.data ? shares(q.data.units) : '—'} />
+        <Row k="Upfront payout" v={`${pct(share)} of your position`} tone="gold" tip="The market's price today for every dividend these shares would pay until maturity." />
+        <Row k="Per year" v={years > 0 ? pct(share / years) : '—'} />
+        <Row k="Minimum payout" v={paid > 0n ? `${amount(minOut(paid, slip))} ${asset.symbol}` : '—'} />
+        <Row k={`1 ${asset.symbol}`} v={`${toNum(asset.multiplier).toFixed(4)} shares`} tip={`Each tokenized share has reinvested the dividends it paid before today, so it holds a little more than one ${ticker(asset.symbol)} share.`} />
+      </div>
+      <Submit
+        gold
+        label={!open ? 'Not available' : insufficient ? `Not enough ${asset.symbol}` : 'Get my dividends now'}
+        disabled={!open || !q.fresh || insufficient || !book}
+        pending={pending}
+        onClick={async () => {
+          const ok = await run(
+            `Get ${ticker(asset.symbol)} dividends upfront`,
+            [{ address: book!.router, abi: abis.XeroRouter, functionName: 'stripAndSellYield', args: [market.vault, market.market, value, minOut(paid, slip), ACCOUNT], label: 'Take dividends upfront' }],
+            [{ token: asset.token, spender: book!.router, amount: value, symbol: asset.symbol }],
+          )
+          if (ok) setInput('')
+        }}
+      />
+      <p className="hint">
+        You hold a share token until {date(market.maturity)}, then redeem it for your shares. If dividends turn out higher than expected, the
+        buyer keeps the difference; if lower, you already have your payout.
+      </p>
+    </div>
+  )
+}
+
+// ------------------------------------------------------------------ Trade dividend tokens
+
+function DividendsForm({ asset, market, slip }: { asset: Asset; market: Market; slip: bigint }) {
   const [side, setSide] = useState<'buy' | 'sell'>('buy')
   const [input, setInput] = useState('')
   const value = parse(useDeferredValue(input))
   const stockBal = useBalance(asset.token)
   const ytBal = useBalance(market.yieldToken)
   const { run, pending } = useTx()
-
-  const q = useQuote(['yield', market.market, side, value.toString()], value > 0n, () =>
+  const q = useQuote(['yield', market.market, side, value.toString()], market.live && value > 0n, () =>
     read<readonly [bigint, bigint]>(market.market, abis.XeroYieldMarket, side === 'buy' ? 'quoteQuoteForYt' : 'quoteYtForQuote', [value]),
   )
   const out = q.data?.[0] ?? 0n
@@ -112,62 +248,39 @@ function YieldTab({ asset, market, slip }: { asset: Asset; market: Market; slip:
   const impact = avg > 0n && market.ytPrice > 0n ? Math.abs(toNum(avg) / toNum(market.ytPrice) - 1) : 0
   const bal = side === 'buy' ? stockBal : ytBal
   const insufficient = value > bal
+  const yt = { symbol: market.ytSymbol, tokenLabel: ytName(market), kind: 'yt' as const }
+  const stock = { symbol: asset.symbol, tokenLabel: asset.symbol, kind: 'stock' as const }
 
   return (
     <div className="stack">
       <div className="seg" role="radiogroup" aria-label="Side">
-        <button role="radio" aria-checked={side === 'buy'} className={side === 'buy' ? 'on on-up' : ''} onClick={() => { setSide('buy'); setInput('') }}>Buy yield</button>
-        <button role="radio" aria-checked={side === 'sell'} className={side === 'sell' ? 'on on-down' : ''} onClick={() => { setSide('sell'); setInput('') }}>Sell yield</button>
+        <button role="radio" aria-checked={side === 'buy'} className={side === 'buy' ? 'on' : ''} onClick={() => { setSide('buy'); setInput('') }}>Buy dividends</button>
+        <button role="radio" aria-checked={side === 'sell'} className={side === 'sell' ? 'on' : ''} onClick={() => { setSide('sell'); setInput('') }}>Sell dividends</button>
       </div>
       <p className="hint">
         {side === 'buy'
-          ? `Own the reinvested dividends of ${asset.symbol} until ${date(market.maturity)}, without holding the stock.`
-          : `Sell the dividends your YT will earn and take the value today.`}
+          ? `Collect every dividend one ${ticker(asset.symbol)} share pays until ${date(market.maturity)}, for a fraction of the share price. You profit if dividends beat the ${pct(market.impliedYield)} a year the market expects.`
+          : 'Sell dividend tokens you hold back to the market.'}
       </p>
-      <AmountInput
-        label="You pay"
-        value={input}
-        onChange={setInput}
-        symbol={side === 'buy' ? asset.symbol : market.ytSymbol}
-        kind={side === 'buy' ? 'stock' : 'yt'}
-        balance={bal}
-        usd={side === 'buy' ? usdOf(value, asset) : usdOf((value * market.ytPrice) / WAD, asset)}
-        error={insufficient}
-      />
-      <AmountInput
-        label="You receive"
-        value={out > 0n ? amount(out) : ''}
-        symbol={side === 'buy' ? market.ytSymbol : asset.symbol}
-        kind={side === 'buy' ? 'yt' : 'stock'}
-        readOnly
-        usd={side === 'buy' ? usdOf((out * market.ytPrice) / WAD, asset) : usdOf(out, asset)}
-      />
-      {q.isError && <p className="warn">Trade too large for current liquidity.</p>}
+      <AmountInput label="You pay" value={input} onChange={setInput} {...(side === 'buy' ? stock : yt)} balance={bal} usd={side === 'buy' ? usdOf(value, asset) : usdOf((value * market.ytPrice) / WAD, asset)} error={insufficient} />
+      <AmountInput label="You receive" value={out > 0n ? amount(out) : ''} {...(side === 'buy' ? yt : stock)} readOnly usd={side === 'buy' ? usdOf((out * market.ytPrice) / WAD, asset) : usdOf(out, asset)} />
+      {q.isError && <p className="warn">That trade is larger than the market can take right now.</p>}
       <div className="rows">
-        <Row k="Implied yield" v={q.data ? <>{pct(market.impliedYield)} → {pct(newYield)}</> : pct(market.impliedYield)} tone={q.data ? (newYield >= market.impliedYield ? 'up' : 'down') : undefined}
-          tip="Annualised dividend yield the market implies for this maturity, in share terms. Buying yield raises it; selling lowers it." />
-        <Row k="Average price" v={avg > 0n ? `${amount(avg)} ${asset.symbol}` : '—'} />
+        <Row k="Expected dividend yield" v={q.data ? <>{pct(market.impliedYield)} → {pct(newYield)}</> : pct(market.impliedYield)}
+          tip="The yearly dividend rate the market is pricing in for this maturity. Buying pushes it up; selling pushes it down." />
         <Row k="Price impact" v={value > 0n ? pct(impact) : '—'} tone={impact > 0.01 ? 'down' : undefined} />
         <Row k="Minimum received" v={out > 0n ? amount(minOut(out, slip)) : '—'} />
-        <Row k="Pool fee" v={pct(0.003, 1)} tip="Paid to liquidity providers." />
+        <Row k="Pool fee" v="0.3%" tip="Paid to the people providing liquidity." />
       </div>
       <Submit
-        label={insufficient ? 'Insufficient balance' : side === 'buy' ? `Buy ${market.ytSymbol}` : `Sell ${market.ytSymbol}`}
-        disabled={!q.fresh || insufficient}
+        label={!market.live ? 'Not available' : insufficient ? 'Not enough balance' : side === 'buy' ? 'Buy dividends' : 'Sell dividends'}
+        disabled={!market.live || !q.fresh || insufficient}
         pending={pending}
         onClick={async () => {
           const ok = await run(
-            side === 'buy' ? `Buy ${market.ytSymbol}` : `Sell ${market.ytSymbol}`,
-            [
-              {
-                address: market.market,
-                abi: abis.XeroYieldMarket,
-                functionName: side === 'buy' ? 'swapExactQuoteForYt' : 'swapExactYtForQuote',
-                args: [value, minOut(out, slip), ACCOUNT],
-                label: side === 'buy' ? 'Buy yield' : 'Sell yield',
-              },
-            ],
-            [{ token: side === 'buy' ? asset.token : market.yieldToken, spender: market.market, amount: value, symbol: side === 'buy' ? asset.symbol : market.ytSymbol }],
+            side === 'buy' ? `Buy ${ytName(market)}` : `Sell ${ytName(market)}`,
+            [{ address: market.market, abi: abis.XeroYieldMarket, functionName: side === 'buy' ? 'swapExactQuoteForYt' : 'swapExactYtForQuote', args: [value, minOut(out, slip), ACCOUNT], label: side === 'buy' ? 'Buy dividends' : 'Sell dividends' }],
+            [{ token: side === 'buy' ? asset.token : market.yieldToken, spender: market.market, amount: value, symbol: side === 'buy' ? asset.symbol : 'dividend tokens' }],
           )
           if (ok) setInput('')
         }}
@@ -176,115 +289,9 @@ function YieldTab({ asset, market, slip }: { asset: Asset; market: Market; slip:
   )
 }
 
-/** Stands for the connected account in call arguments; useTx substitutes it before simulating. */
-const ACCOUNT = ACCOUNT_PLACEHOLDER
+// ------------------------------------------------------------------ Redeem, rejoin, claim
 
-// ------------------------------------------------------------------ Fix: strip + sell YT via router
-
-function FixTab({ asset, market, slip }: { asset: Asset; market: Market; slip: bigint }) {
-  const [input, setInput] = useState('')
-  const value = parse(useDeferredValue(input))
-  const stockBal = useBalance(asset.token)
-  const { run, pending } = useTx()
-  const q = useQuote(['fix', market.vault, value.toString()], value > 0n, async () => {
-    const units = await read<bigint>(market.vault, abis.XeroVault, 'previewStrip', [value])
-    const [quoteOut] = await read<readonly [bigint, bigint]>(market.market, abis.XeroYieldMarket, 'quoteYtForQuote', [units])
-    return { units, quoteOut }
-  })
-  const insufficient = value > stockBal
-  const upfront = q.data?.quoteOut ?? 0n
-  const tau = toNum(market.tau)
-  const sharesNow = toNum(value) * toNum(asset.multiplier)
-
-  return (
-    <div className="stack">
-      <p className="hint">
-        Keep your {asset.symbol} exposure and sell the dividends it would earn until {date(market.maturity)}. You get the dividend
-        value today, in {asset.symbol}, plus a Principal Token that redeems for your shares at maturity.
-      </p>
-      <AmountInput label="Deposit" value={input} onChange={setInput} symbol={asset.symbol} balance={stockBal} usd={usdOf(value, asset)} error={insufficient} />
-      <div className="split-out">
-        <div>
-          <span>Principal Token</span>
-          <b>{q.data ? amount(q.data.units) : '—'} {market.ptSymbol}</b>
-          <small>≈ {num(sharesNow)} shares at maturity</small>
-        </div>
-        <div className="split-yield">
-          <span>Dividends, paid now</span>
-          <b>{upfront > 0n ? amount(upfront) : '—'} {asset.symbol}</b>
-          <small>{usdOf(upfront, asset) ?? ''}</small>
-        </div>
-      </div>
-      <div className="rows">
-        <Row k="Upfront yield" v={value > 0n && upfront > 0n ? pct(toNum(upfront) / toNum(value)) : '—'}
-          tip={`Share of your position paid out today for ${duration(market.tau)} of future dividends.`} />
-        <Row k="Annualised" v={value > 0n && upfront > 0n && tau > 0 ? pct(toNum(upfront) / toNum(value) / tau) : '—'} />
-        <Row k="Minimum received" v={upfront > 0n ? amount(minOut(upfront, slip)) : '—'} />
-      </div>
-      <Submit
-        label={insufficient ? 'Insufficient balance' : 'Sell future dividends'}
-        disabled={!q.fresh || insufficient || !book}
-        pending={pending}
-        onClick={async () => {
-          const ok = await run(
-            `Fix ${asset.symbol} dividends`,
-            [{ address: book!.router, abi: abis.XeroRouter, functionName: 'stripAndSellYield', args: [market.vault, market.market, value, minOut(upfront, slip), ACCOUNT], label: 'Strip and sell yield' }],
-            [{ token: asset.token, spender: book!.router, amount: value, symbol: asset.symbol }],
-          )
-          if (ok) setInput('')
-        }}
-      />
-    </div>
-  )
-}
-
-const num = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: 2 })
-
-// ------------------------------------------------------------------ Strip
-
-function StripTab({ asset, market }: { asset: Asset; market: Market }) {
-  const [input, setInput] = useState('')
-  const value = parse(useDeferredValue(input))
-  const stockBal = useBalance(asset.token)
-  const { run, pending } = useTx()
-  const q = useQuote(['strip', market.vault, value.toString()], value > 0n, () => read<bigint>(market.vault, abis.XeroVault, 'previewStrip', [value]))
-  const insufficient = value > stockBal
-  const blocked = market.frozen ? 'Vault paused for a corporate action' : market.halted ? 'Stripping halted' : undefined
-
-  return (
-    <div className="stack">
-      <p className="hint">Split {asset.symbol} into a Principal Token and a Yield Token. Recombine them any time before maturity.</p>
-      <AmountInput label="Deposit" value={input} onChange={setInput} symbol={asset.symbol} balance={stockBal} usd={usdOf(value, asset)} error={insufficient} />
-      <div className="split-out">
-        <div>
-          <span>Principal</span>
-          <b>{q.data ? amount(q.data) : '—'} PT</b>
-          <small>{q.data ? usdOf((q.data * market.ptPrice) / WAD, asset) : ''}</small>
-        </div>
-        <div className="split-yield">
-          <span>Yield</span>
-          <b>{q.data ? amount(q.data) : '—'} YT</b>
-          <small>{q.data ? usdOf((q.data * market.ytPrice) / WAD, asset) : ''}</small>
-        </div>
-      </div>
-      <div className="rows">
-        <Row k="Strip fee" v="0.05%" tip="Protocol fee on deposits, paid in the Stock Token." />
-      </div>
-      <Submit
-        label={blocked ?? (insufficient ? 'Insufficient balance' : 'Strip')}
-        disabled={!q.fresh || insufficient || !!blocked}
-        pending={pending}
-        onClick={async () => {
-          if (await run(`Strip ${asset.symbol}`, [{ address: market.vault, abi: abis.XeroVault, functionName: 'strip', args: [value, ACCOUNT], label: 'Strip' }], [{ token: asset.token, spender: market.vault, amount: value, symbol: asset.symbol }])) setInput('')
-        }}
-      />
-    </div>
-  )
-}
-
-// ------------------------------------------------------------------ Redeem / recombine / claim
-
-function RedeemTab({ asset, market, now }: { asset: Asset; market: Market; now: number }) {
+function RedeemForm({ asset, market, now }: { asset: Asset; market: Market; now: number }) {
   const [input, setInput] = useState('')
   const value = parse(useDeferredValue(input))
   const ptBal = useBalance(market.principalToken)
@@ -305,27 +312,27 @@ function RedeemTab({ asset, market, now }: { asset: Asset; market: Market; now: 
     <div className="stack">
       <p className="hint">
         {matured
-          ? `Matured ${date(market.maturity)}. Each Principal Token redeems for its share of ${asset.symbol}.`
-          : 'Burn equal Principal and Yield Tokens to get your Stock Tokens back (PT + YT → Stock).'}
+          ? `This maturity ended on ${date(market.maturity)}. Each share token now redeems for its ${ticker(asset.symbol)} shares.`
+          : `Before ${date(market.maturity)}, you can rejoin a share token and a dividend token to get the share back straight away.`}
       </p>
-      <AmountInput label={matured ? 'Redeem PT' : 'Recombine units'} value={input} onChange={setInput} symbol={matured ? market.ptSymbol : `${market.symbol} PT+YT`} kind="pt" balance={max} error={value > max} />
+      <AmountInput label={matured ? 'Share tokens' : 'Pairs to rejoin'} value={input} onChange={setInput} symbol={market.ptSymbol} tokenLabel={ptName(market)} kind="pt" balance={max} error={value > max} />
       <div className="rows">
         <Row k="You receive" v={q.data ? `${amount(q.data)} ${asset.symbol}` : '—'} />
       </div>
       <Submit
-        label={value > max ? 'Insufficient balance' : matured ? 'Redeem' : 'Recombine'}
+        label={value > max ? 'Not enough balance' : matured ? 'Redeem for shares' : 'Rejoin into shares'}
         disabled={!q.fresh || value > max}
         pending={pending}
         onClick={async () => {
-          if (await run(matured ? `Redeem ${market.ptSymbol}` : `Recombine ${asset.symbol}`, [{ address: market.vault, abi: abis.XeroVault, functionName: matured ? 'redeem' : 'recombine', args: [value, ACCOUNT] }])) setInput('')
+          if (await run(matured ? `Redeem ${ptName(market)}` : `Rejoin ${ticker(asset.symbol)}`, [{ address: market.vault, abi: abis.XeroVault, functionName: matured ? 'redeem' : 'recombine', args: [value, ACCOUNT] }])) setInput('')
         }}
       />
       <div className="claim-box">
         <div>
-          <span>Accrued yield</span>
+          <span>Dividends earned by your dividend tokens</span>
           <b>{amount(claim.data ?? 0n)} {asset.symbol}</b>
         </div>
-        <button className="btn btn-ghost" disabled={!claim.data || pending} onClick={() => run(`Claim ${asset.symbol} yield`, [{ address: market.vault, abi: abis.XeroVault, functionName: 'claimYield', args: [ACCOUNT] }])}>
+        <button className="btn btn-sm" disabled={!claim.data || pending} onClick={() => run(`Claim ${ticker(asset.symbol)} dividends`, [{ address: market.vault, abi: abis.XeroVault, functionName: 'claimYield', args: [ACCOUNT] }])}>
           Claim
         </button>
       </div>
@@ -333,10 +340,53 @@ function RedeemTab({ asset, market, now }: { asset: Asset; market: Market; now: 
   )
 }
 
-// ------------------------------------------------------------------ Pool: add / remove liquidity
+// ------------------------------------------------------------------ Advanced: split, liquidity
 
-function PoolTab({ asset, market }: { asset: Asset; market: Market }) {
-  const [mode, setMode] = useState<'add' | 'remove'>('add')
+function AdvancedForm({ asset, market }: { asset: Asset; market: Market }) {
+  const [mode, setMode] = useState<'split' | 'add' | 'remove'>('split')
+  return (
+    <div className="stack">
+      <div className="seg" role="radiogroup" aria-label="Action">
+        {(['split', 'add', 'remove'] as const).map((m) => (
+          <button key={m} role="radio" aria-checked={mode === m} className={mode === m ? 'on' : ''} onClick={() => setMode(m)}>
+            {m === 'split' ? 'Split shares' : m === 'add' ? 'Add liquidity' : 'Remove liquidity'}
+          </button>
+        ))}
+      </div>
+      {mode === 'split' ? <SplitForm asset={asset} market={market} /> : <PoolForm asset={asset} market={market} mode={mode} />}
+    </div>
+  )
+}
+
+function SplitForm({ asset, market }: { asset: Asset; market: Market }) {
+  const [input, setInput] = useState('')
+  const value = parse(useDeferredValue(input))
+  const bal = useBalance(asset.token)
+  const { run, pending } = useTx()
+  const q = useQuote(['strip', market.vault, value.toString()], value > 0n, () => read<bigint>(market.vault, abis.XeroVault, 'previewStrip', [value]))
+  const open = market.live && !market.frozen && !market.halted
+  return (
+    <>
+      <p className="hint">Split shares into a share token and a dividend token and keep both, for example to provide liquidity. Rejoin them any time before maturity.</p>
+      <AmountInput label="Shares to split" value={input} onChange={setInput} symbol={asset.symbol} tokenLabel={asset.symbol} balance={bal} usd={usdOf(value, asset)} error={value > bal} />
+      <div className="split-out">
+        <div><span>Share tokens</span><b>{q.data ? amount(q.data) : '—'}</b><small>{q.data ? usdOf((q.data * market.ptPrice) / WAD, asset) : ''}</small></div>
+        <div className="y"><span>Dividend tokens</span><b>{q.data ? amount(q.data) : '—'}</b><small>{q.data ? usdOf((q.data * market.ytPrice) / WAD, asset) : ''}</small></div>
+      </div>
+      <div className="rows"><Row k="Split fee" v="0.05%" /></div>
+      <Submit
+        label={!open ? 'Not available' : value > bal ? 'Not enough balance' : 'Split'}
+        disabled={!open || !q.fresh || value > bal}
+        pending={pending}
+        onClick={async () => {
+          if (await run(`Split ${ticker(asset.symbol)}`, [{ address: market.vault, abi: abis.XeroVault, functionName: 'strip', args: [value, ACCOUNT], label: 'Split' }], [{ token: asset.token, spender: market.vault, amount: value, symbol: asset.symbol }])) setInput('')
+        }}
+      />
+    </>
+  )
+}
+
+function PoolForm({ asset, market, mode }: { asset: Asset; market: Market; mode: 'add' | 'remove' }) {
   const [input, setInput] = useState('')
   const value = parse(useDeferredValue(input))
   const ytBal = useBalance(market.yieldToken)
@@ -353,31 +403,25 @@ function PoolTab({ asset, market }: { asset: Asset; market: Market }) {
   const addShort = value > ytBal || quoteNeeded > stockBal
 
   return (
-    <div className="stack">
-      <div className="seg" role="radiogroup" aria-label="Liquidity action">
-        <button role="radio" aria-checked={mode === 'add'} className={mode === 'add' ? 'on' : ''} onClick={() => { setMode('add'); setInput('') }}>Add</button>
-        <button role="radio" aria-checked={mode === 'remove'} className={mode === 'remove' ? 'on' : ''} onClick={() => { setMode('remove'); setInput('') }}>Remove</button>
-      </div>
-      <p className="hint">LPs earn swap fees plus the reinvested dividends of the YT held by the pool.</p>
+    <>
+      <p className="hint">Liquidity providers earn the 0.3% trading fee plus the dividends on the dividend tokens held by the pool.</p>
       {mode === 'add' ? (
         <>
-          <AmountInput label="YT" value={input} onChange={setInput} symbol={market.ytSymbol} kind="yt" balance={ytBal} error={value > ytBal} />
-          <AmountInput label={`${asset.symbol} (matched)`} value={value > 0n ? amount(quoteNeeded) : ''} symbol={asset.symbol} readOnly balance={stockBal} error={quoteNeeded > stockBal} />
+          <AmountInput label="Dividend tokens" value={input} onChange={setInput} symbol={market.ytSymbol} tokenLabel={ytName(market)} kind="yt" balance={ytBal} error={value > ytBal} />
+          <AmountInput label={`${asset.symbol} to match`} value={value > 0n ? amount(quoteNeeded) : ''} symbol={asset.symbol} tokenLabel={asset.symbol} readOnly balance={stockBal} error={quoteNeeded > stockBal} />
         </>
       ) : (
         <>
-          <AmountInput label="LP tokens" value={input} onChange={setInput} symbol="XLP" kind="lp" balance={lpBal} error={value > lpBal} />
-          <div className="rows">
-            <Row k="You receive" v={value > 0n ? `${amount(out.yt)} YT + ${amount(out.quote)} ${asset.symbol}` : '—'} />
-          </div>
+          <AmountInput label="Pool shares" value={input} onChange={setInput} symbol="LP" tokenLabel="Pool shares" kind="lp" balance={lpBal} error={value > lpBal} />
+          <div className="rows"><Row k="You receive" v={value > 0n ? `${amount(out.yt)} dividend tokens + ${amount(out.quote)} ${asset.symbol}` : '—'} /></div>
         </>
       )}
       <div className="rows">
-        <Row k="Pool liquidity" v={usd(market.liquidityUsd, 0)} />
+        <Row k="Pool size" v={usd(market.liquidityUsd, 0)} />
         <Row k="Your share" v={pct(share)} />
       </div>
       <Submit
-        label={mode === 'add' ? (addShort ? 'Insufficient balance' : 'Add liquidity') : value > lpBal ? 'Insufficient balance' : 'Remove liquidity'}
+        label={mode === 'add' ? (addShort ? 'Not enough balance' : 'Add liquidity') : value > lpBal ? 'Not enough balance' : 'Remove liquidity'}
         disabled={value === 0n || (mode === 'add' ? addShort : value > lpBal)}
         pending={pending}
         onClick={async () => {
@@ -387,7 +431,7 @@ function PoolTab({ asset, market }: { asset: Asset; market: Market }) {
                   'Add liquidity',
                   [{ address: market.market, abi: abis.XeroYieldMarket, functionName: 'addLiquidity', args: [value, quoteNeeded, 0n, ACCOUNT] }],
                   [
-                    { token: market.yieldToken, spender: market.market, amount: value, symbol: 'YT' },
+                    { token: market.yieldToken, spender: market.market, amount: value, symbol: 'dividend tokens' },
                     { token: asset.token, spender: market.market, amount: quoteNeeded, symbol: asset.symbol },
                   ],
                 )
@@ -395,6 +439,35 @@ function PoolTab({ asset, market }: { asset: Asset; market: Market }) {
           if (ok) setInput('')
         }}
       />
-    </div>
+    </>
+  )
+}
+
+// ------------------------------------------------------------------ tabbed ticket (asset page)
+
+export type TicketTab = 'discount' | 'upfront' | 'dividends' | 'redeem' | 'advanced'
+
+export function TradeTicket({ asset, market, now, tab: initial = 'discount' }: { asset: Asset; market: Market; now: number; tab?: TicketTab }) {
+  const [tab, setTab] = useState<TicketTab>(initial)
+  const [slip, setSlip] = useState(50n)
+  const active = market.matured && tab !== 'redeem' && tab !== 'advanced' ? 'redeem' : tab
+  return (
+    <section className="card ticket">
+      <Tabs.Root value={active} onValueChange={(v) => setTab(v as TicketTab)}>
+        <Tabs.List className="ticket-tabs" aria-label="What would you like to do?">
+          <Tabs.Trigger value="discount" disabled={market.matured}>Discount</Tabs.Trigger>
+          <Tabs.Trigger value="upfront" disabled={market.matured}>Upfront</Tabs.Trigger>
+          <Tabs.Trigger value="dividends" disabled={market.matured}>Dividends</Tabs.Trigger>
+          <Tabs.Trigger value="redeem">Redeem</Tabs.Trigger>
+          <Tabs.Trigger value="advanced">More</Tabs.Trigger>
+        </Tabs.List>
+        <Tabs.Content value="discount"><DiscountForm {...{ asset, market, slip }} /></Tabs.Content>
+        <Tabs.Content value="upfront"><UpfrontForm {...{ asset, market, slip }} /></Tabs.Content>
+        <Tabs.Content value="dividends"><DividendsForm {...{ asset, market, slip }} /></Tabs.Content>
+        <Tabs.Content value="redeem"><RedeemForm {...{ asset, market, now }} /></Tabs.Content>
+        <Tabs.Content value="advanced"><AdvancedForm {...{ asset, market }} /></Tabs.Content>
+      </Tabs.Root>
+      {(active === 'discount' || active === 'upfront' || active === 'dividends') && <SlippagePicker slip={slip} setSlip={setSlip} />}
+    </section>
   )
 }

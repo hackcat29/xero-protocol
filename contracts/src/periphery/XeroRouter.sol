@@ -22,8 +22,13 @@ contract XeroRouter is Multicall, ReentrancyGuard {
 
     IVaultRegistryView public immutable registry;
 
+    /// @dev Upper bound on strip-and-sell rounds in `buyPrincipal`; each round reinvests the previous round's
+    ///      YT proceeds, which shrink geometrically with the PT discount.
+    uint256 internal constant BUY_ROUNDS = 4;
+
     error UnknownVault();
     error MarketMismatch();
+    error InsufficientOutput();
 
     constructor(IVaultRegistryView registry_) {
         registry = registry_;
@@ -46,6 +51,34 @@ contract XeroRouter is Multicall, ReentrancyGuard {
         IERC20(address(vault.yt())).forceApprove(address(market), units);
         quoteOut = market.swapExactYtForQuote(units, minQuoteOut, to);
         IERC20(address(vault.pt())).safeTransfer(to, units);
+    }
+
+    /// @notice Buy Principal Tokens with `raw` Stock Tokens: strip, sell the YT for Stock Tokens, and strip the
+    ///         proceeds again, so `raw` buys roughly raw / (1 - discount) worth of PT. Stops once a round's
+    ///         proceeds fall under 1 bp of `raw` and returns the remainder to `to`.
+    /// @return units PT delivered to `to` @return refund Stock Tokens returned to `to`
+    function buyPrincipal(XeroVault vault, XeroYieldMarket market, uint256 raw, uint256 minUnitsOut, address to)
+        external
+        nonReentrant
+        returns (uint256 units, uint256 refund)
+    {
+        _checkPair(vault, market);
+        IERC20 token = IERC20(vault.underlying());
+        IERC20 yt = IERC20(address(vault.yt()));
+        token.safeTransferFrom(msg.sender, address(this), raw);
+
+        refund = raw;
+        for (uint256 i; i < BUY_ROUNDS && refund * 10_000 >= raw; ++i) {
+            token.forceApprove(address(vault), refund);
+            uint256 u = vault.strip(refund, address(this));
+            units += u;
+            yt.forceApprove(address(market), u);
+            refund = market.swapExactYtForQuote(u, 0, address(this));
+        }
+        if (units < minUnitsOut) revert InsufficientOutput();
+
+        IERC20(address(vault.pt())).safeTransfer(to, units);
+        if (refund > 0) token.safeTransfer(to, refund);
     }
 
     /// @notice Strip `raw` Stock Tokens and deliver both PT and YT to `to`.

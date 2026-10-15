@@ -51,13 +51,26 @@ export function useTx() {
           const s = steps[i]
           const prefix = steps.length > 1 ? `Step ${i + 1}/${steps.length} · ` : ''
           toast.loading(title, { id, description: `${prefix}${s.label ?? 'Confirm in your wallet'}` })
-          const { request } = await simulateContract(wagmiConfig, {
-            account: address,
-            address: s.address,
-            abi: s.abi,
-            functionName: s.functionName,
-            args: (s.args ?? []).map((a) => (a === ACCOUNT_PLACEHOLDER ? address : a)),
-          } as never)
+          const simulate = () =>
+            simulateContract(wagmiConfig, {
+              account: address,
+              address: s.address,
+              abi: s.abi,
+              functionName: s.functionName,
+              args: (s.args ?? []).map((a) => (a === ACCOUNT_PLACEHOLDER ? address : a)),
+            } as never)
+          // Public RPCs are load-balanced: right after the previous step confirms, the node serving this
+          // simulation may not have seen it yet (an approval looks missing). Give it a few blocks to catch up.
+          let request: unknown
+          for (let attempt = 0; ; attempt++) {
+            try {
+              ;({ request } = await simulate())
+              break
+            } catch (e) {
+              if (i === 0 || attempt >= 4) throw e
+              await new Promise((r) => setTimeout(r, 1500))
+            }
+          }
           last = await writeContract(wagmiConfig, request as never)
           toast.loading(title, { id, description: `${prefix}Waiting for confirmation…` })
           const receipt = await waitForTransactionReceipt(wagmiConfig, { hash: last })

@@ -1,10 +1,12 @@
 import { Link } from 'react-router'
 import { useAccount } from 'wagmi'
-import { Skeleton, Stat } from '../components/Info'
+import { StockMark } from '../components/Brand'
+import { TestTokensButton } from '../components/DevConsole'
+import { Skeleton } from '../components/Info'
 import { WalletButton } from '../components/Nav'
-import { MarketIcon, TokenIcon } from '../components/TokenIcon'
-import { amount, date, pct, toNum, usd } from '../lib/format'
-import { abis } from '../lib/network'
+import { company, term, ticker } from '../lib/assets'
+import { amount, date, toNum, usd } from '../lib/format'
+import { abis, isDemo } from '../lib/network'
 import { usePortfolio, useProtocol, type Position } from '../lib/protocol'
 import { ACCOUNT_PLACEHOLDER, useTx } from '../lib/tx'
 
@@ -18,8 +20,8 @@ export function Portfolio() {
     return (
       <div className="page">
         <div className="card empty-state">
-          <h3>Connect a wallet to see your positions</h3>
-          <p className="sub">Principal Tokens, Yield Tokens, liquidity and claimable dividends, in one place.</p>
+          <h3>Connect a wallet to see your portfolio</h3>
+          <p className="sub">Shares you've bought at a discount, dividends you've taken upfront, and anything waiting to be claimed.</p>
           <WalletButton />
         </div>
       </div>
@@ -27,6 +29,7 @@ export function Portfolio() {
   }
 
   const claimable = data?.positions.filter((p: Position) => p.claimable > 0n) ?? []
+  const redeemable = data?.positions.filter((p: Position) => p.market.matured && p.pt > 0n) ?? []
   const stockValue = protocol && data ? protocol.assets.reduce((a, s) => a + toNum(data.stocks[s.token] ?? 0n) * toNum(s.priceUsd), 0) : 0
 
   return (
@@ -34,51 +37,50 @@ export function Portfolio() {
       <header className="page-h">
         <div>
           <h1>Portfolio</h1>
-          <p className="sub">Your Xero positions and Stock Token balances on Base.</p>
+          <p className="sub">Everything you hold on Xero.</p>
         </div>
         {claimable.length > 0 && (
           <button
-            className="btn btn-primary"
+            className="btn btn-gold"
             disabled={pending}
             onClick={() =>
-              run(
-                'Claim all yield',
-                claimable.map((p: Position) => ({ address: p.market.vault, abi: abis.XeroVault, functionName: 'claimYield', args: [ACCOUNT_PLACEHOLDER], label: `Claim ${p.market.id}` })),
-              )
+              run('Claim all dividends', claimable.map((p: Position) => ({ address: p.market.vault, abi: abis.XeroVault, functionName: 'claimYield', args: [ACCOUNT_PLACEHOLDER], label: `Claim ${ticker(p.market.symbol)}` })))
             }
           >
-            Claim all · {usd(data!.claimableUsd)}
+            Claim {usd(data!.claimableUsd)} in dividends
           </button>
         )}
       </header>
 
-      <section className="kpis kpis-page">
-        <div className="kpi"><span>Xero positions</span><b>{data ? usd(data.valueUsd) : <Skeleton w={90} h={26} />}</b></div>
-        <div className="kpi"><span>Claimable yield</span><b className="amber">{data ? usd(data.claimableUsd) : <Skeleton w={90} h={26} />}</b></div>
-        <div className="kpi"><span>Stock Tokens</span><b>{data ? usd(stockValue) : <Skeleton w={90} h={26} />}</b></div>
-        <div className="kpi"><span>Open positions</span><b>{data ? data.positions.length : <Skeleton w={30} h={26} />}</b></div>
+      <section className="kpis">
+        <div><span>Positions on Xero</span><b>{data ? usd(data.valueUsd) : <Skeleton w={90} h={26} />}</b></div>
+        <div><span>Dividends to claim</span><b className="gold">{data ? usd(data.claimableUsd) : <Skeleton w={90} h={26} />}</b></div>
+        <div><span>Shares in your wallet</span><b>{data ? usd(stockValue) : <Skeleton w={90} h={26} />}</b></div>
+        <div><span>Ready to redeem</span><b>{data ? redeemable.length : <Skeleton w={30} h={26} />}</b></div>
       </section>
 
-      <section className="card table-card">
-        <div className="card-h pad"><h3>Positions</h3></div>
+      <section className="card" style={{ marginBottom: 20 }}>
+        <div className="card-h card-pad" style={{ marginBottom: 0, paddingBottom: 6 }}><h3>Positions</h3></div>
         {isLoading || !data ? (
-          <div style={{ padding: 16 }}><Skeleton h={120} /></div>
+          <div className="card-pad"><Skeleton h={120} /></div>
         ) : data.positions.length === 0 ? (
           <div className="empty-state">
-            <p className="sub">No positions yet.</p>
-            <Link to="/markets" className="btn btn-primary">Explore markets</Link>
+            <p className="sub">Nothing here yet. Buy a stock at a discount or take your dividends upfront to get started.</p>
+            <div className="row-btns" style={{ justifyContent: 'center' }}>
+              <Link to="/discount" className="btn btn-primary">Buy at a discount</Link>
+              <Link to="/upfront" className="btn">Dividends upfront</Link>
+            </div>
           </div>
         ) : (
           <div className="table-wrap">
-            <table className="markets-table">
+            <table className="table">
               <thead>
                 <tr>
-                  <th>Market</th>
-                  <th className="num">Principal</th>
-                  <th className="num">Yield</th>
-                  <th className="num">Liquidity</th>
-                  <th className="num">Claimable</th>
-                  <th className="num">Value</th>
+                  <th>Stock</th>
+                  <th className="r">Shares due</th>
+                  <th className="r">Dividend tokens</th>
+                  <th className="r">To claim</th>
+                  <th className="r">Value today</th>
                   <th />
                 </tr>
               </thead>
@@ -86,27 +88,28 @@ export function Portfolio() {
                 {data.positions.map((p: Position) => (
                   <tr key={p.market.vault}>
                     <td>
-                      <div className="mkt">
-                        <MarketIcon symbol={p.market.symbol} size={28} />
+                      <div className="stock">
+                        <StockMark symbol={p.market.symbol} size={34} />
                         <div>
-                          <b>{p.market.symbol} · {p.market.label}</b>
-                          <span>{p.market.matured ? 'Matured' : `${pct(p.market.impliedYield)} implied`} · {date(p.market.maturity)}</span>
+                          <b>{ticker(p.market.symbol)} · {term(p.market.label)}</b>
+                          <small>{p.market.matured ? 'Ended' : 'Matures'} {date(p.market.maturity)}</small>
                         </div>
                       </div>
                     </td>
-                    <td className="num">{amount(p.pt)}</td>
-                    <td className="num amber">{amount(p.yt)}</td>
-                    <td className="num">{p.lp > 0n ? amount(p.lp) : '—'}</td>
-                    <td className="num">{p.claimable > 0n ? `${amount(p.claimable)} ${p.market.symbol}` : '—'}</td>
-                    <td className="num"><b>{usd(p.valueUsd)}</b></td>
-                    <td className="num">
+                    <td className="r">{p.pt > 0n ? amount(p.pt) : '—'}</td>
+                    <td className="r gold">{p.yt > 0n ? amount(p.yt) : '—'}</td>
+                    <td className="r">{p.claimable > 0n ? `${amount(p.claimable)} ${p.market.symbol}` : '—'}</td>
+                    <td className="r"><b>{usd(p.valueUsd)}</b></td>
+                    <td className="r">
                       <div className="row-btns">
                         {p.claimable > 0n && (
-                          <button className="btn btn-sm" disabled={pending} onClick={() => run(`Claim ${p.market.id} yield`, [{ address: p.market.vault, abi: abis.XeroVault, functionName: 'claimYield', args: [ACCOUNT_PLACEHOLDER] }])}>
+                          <button className="btn btn-sm" disabled={pending} onClick={() => run(`Claim ${ticker(p.market.symbol)} dividends`, [{ address: p.market.vault, abi: abis.XeroVault, functionName: 'claimYield', args: [ACCOUNT_PLACEHOLDER] }])}>
                             Claim
                           </button>
                         )}
-                        <Link className="btn btn-sm btn-ghost" to={`/markets/${p.market.symbol}?m=${p.market.label}`}>Manage</Link>
+                        <Link className="btn btn-sm btn-ghost" to={`/markets/${p.market.symbol}?m=${p.market.label}${p.market.matured ? '&do=redeem' : ''}`}>
+                          {p.market.matured ? 'Redeem' : 'Manage'}
+                        </Link>
                       </div>
                     </td>
                   </tr>
@@ -118,15 +121,18 @@ export function Portfolio() {
       </section>
 
       {protocol && data && (
-        <section className="card">
-          <div className="card-h"><h3>Stock Tokens</h3></div>
+        <section className="card card-pad">
+          <div className="card-h">
+            <h3>Shares in your wallet</h3>
+            {isDemo && <TestTokensButton label="Get test tokens" className="btn btn-sm" />}
+          </div>
           <div className="balances">
             {protocol.assets.map((a) => (
-              <Link to={`/markets/${a.symbol}`} className="bal" key={a.token}>
-                <TokenIcon symbol={a.symbol} size={28} />
+              <Link to={`/markets/${a.symbol}`} key={a.token}>
+                <StockMark symbol={a.symbol} size={32} />
                 <div>
                   <b>{amount(data.stocks[a.token] ?? 0n)} {a.symbol}</b>
-                  <span>{usd(toNum(data.stocks[a.token] ?? 0n) * toNum(a.priceUsd))}</span>
+                  <span>{company(a.symbol)} · {usd(toNum(data.stocks[a.token] ?? 0n) * toNum(a.priceUsd))}</span>
                 </div>
               </Link>
             ))}

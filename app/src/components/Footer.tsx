@@ -1,11 +1,12 @@
 import { Link } from 'react-router'
 import { Logo } from './Brand'
 import { DOCS_URL, GitHubIcon, REPO_URL } from './Nav'
-
-export const TAGLINE = 'Deconstruct the B20 Multiplier. Fixed Yield & Leveraged Dividends on Base.'
+import { BASE_FAUCET_URL, chain, explorer, isDemo } from '../lib/network'
 
 const LEGAL =
-  'Xero Protocol is an independent decentralized protocol built on Base and is not affiliated with, endorsed by, or sponsored by Coinbase. B20 Tokenized Equities, Principal Tokens (PT), and Yield Tokens (YT) carry smart contract and market risk. Yield Token value depends on corporate dividend actions, which are declared by equity issuers and are not guaranteed. Not financial advice.'
+  'Xero is open-source software running on the Base network. It is not a broker, bank or investment adviser, and is not affiliated with the issuers of the stocks shown. ' +
+  'The current version runs on Base Sepolia, a test network: tokens there have no monetary value. Tokenized stocks, share tokens and dividend tokens carry market and smart-contract risk, ' +
+  'and future dividends are never guaranteed. Nothing on this site is financial advice.'
 
 export function Footer() {
   return (
@@ -13,33 +14,27 @@ export function Footer() {
       <div className="footer-inner">
         <div className="footer-brand">
           <Logo />
-          <p>{TAGLINE}</p>
-          <div className="footer-base-pill">
-            <span className="dot dot-base" /> Powered by Base (OP Stack L2)
-          </div>
+          <p>Buy stocks at a discount, or get your dividends in advance.</p>
         </div>
         <div className="footer-cols">
           <div>
-            <h4>Protocol</h4>
-            <Link to="/markets">B20 Markets</Link>
-            <Link to="/strip">Strip Vault</Link>
-            <Link to="/discount">Discounted Stock</Link>
-            <Link to="/speculate">Dividend Speculation</Link>
+            <h4>Product</h4>
+            <Link to="/markets">Markets</Link>
+            <Link to="/discount">Buy at a discount</Link>
+            <Link to="/upfront">Dividends upfront</Link>
             <Link to="/portfolio">Portfolio</Link>
           </div>
           <div>
-            <h4>Architecture</h4>
-            <Link to="/architecture">B20 Math & Formulas</Link>
+            <h4>Learn</h4>
             <a href={DOCS_URL} target="_blank" rel="noreferrer">Documentation</a>
-            <a href={REPO_URL} target="_blank" rel="noreferrer">GitHub Repository</a>
-            <a href="#security">Formal Verification</a>
+            <a href="/#faq">FAQ</a>
+            <a href="/#safety">Security</a>
           </div>
           <div>
-            <h4>Base Ecosystem</h4>
-            <a href="https://basescan.org" target="_blank" rel="noreferrer">BaseScan Explorer</a>
-            <a href="https://docs.base.org" target="_blank" rel="noreferrer">Base Documentation</a>
-            <a href="https://www.coinbase.com/faucets/base-ethereum-sepolia-faucet" target="_blank" rel="noreferrer">Base Sepolia Faucet</a>
-            <a href="https://docs.chain.link" target="_blank" rel="noreferrer">Chainlink Feeds on Base</a>
+            <h4>Developers</h4>
+            <a href={REPO_URL} target="_blank" rel="noreferrer">GitHub</a>
+            {explorer && <a href={explorer} target="_blank" rel="noreferrer">Block explorer</a>}
+            <a href={BASE_FAUCET_URL} target="_blank" rel="noreferrer">Test ETH faucet</a>
           </div>
         </div>
       </div>
@@ -48,19 +43,16 @@ export function Footer() {
   )
 }
 
-/** In-app footer: concise status line with Base indicators */
 export function AppFooter() {
   return (
     <footer className="footer footer-app">
       <div className="footer-app-inner">
-        <span className="footer-app-base">
-          <span className="dot dot-base" /> Base L2 · Coinbase B20 Yield-Stripping Primitives
-        </span>
-        <span className="footer-app-links">
-          <Link to="/architecture">Architecture</Link>
+        <span>Xero on {chain.name}{isDemo ? ' · test tokens only' : ''}</span>
+        <nav>
           <a href={DOCS_URL} target="_blank" rel="noreferrer">Docs</a>
+          <Link to="/">About</Link>
           <a href={REPO_URL} target="_blank" rel="noreferrer" aria-label="GitHub"><GitHubIcon size={15} /></a>
-        </span>
+        </nav>
       </div>
     </footer>
   )

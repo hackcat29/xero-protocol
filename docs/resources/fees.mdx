@@ -1,0 +1,18 @@
+---
+title: "Fees"
+description: "Everything Xero charges, and who receives it."
+---
+
+| Fee | Amount | When | Goes to |
+| --- | --- | --- | --- |
+| Split fee | 0.05% | When shares are split into share and dividend tokens (including buying at a discount and taking dividends upfront) | Xero treasury |
+| Pool fee | 0.3% | On every dividend-market trade | Liquidity providers |
+| Dividend fee | 3% | Of the dividends collected by dividend tokens | Xero treasury |
+| Redemption | Free | Redeeming or rejoining | — |
+| Network fee | Usually under $0.01 | Every transaction on Base | Base network |
+
+<Note>
+  Buying at a discount splits shares more than once (up to four rounds), so it pays the split fee on each round. In practice the later rounds are tiny, so the total is close to 0.05%. The quote in the app already includes every fee.
+</Note>
+
+Fees are set by Xero governance, behind a timelock on mainnet, and are capped in the contracts.

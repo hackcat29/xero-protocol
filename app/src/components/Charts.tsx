@@ -18,7 +18,7 @@ function baseChart(el: HTMLElement): IChartApi {
     layout: {
       background: { type: ColorType.Solid, color: 'transparent' },
       textColor: css('--muted'),
-      fontFamily: 'Geist Mono, ui-monospace, monospace',
+      fontFamily: 'Geist, system-ui, sans-serif',
       fontSize: 11,
       attributionLogo: true,
     },
@@ -27,8 +27,8 @@ function baseChart(el: HTMLElement): IChartApi {
     timeScale: { borderVisible: false, fixLeftEdge: true, fixRightEdge: true },
     crosshair: {
       mode: CrosshairMode.Magnet,
-      vertLine: { color: css('--line'), labelBackgroundColor: css('--ink-3') },
-      horzLine: { color: css('--line'), labelBackgroundColor: css('--ink-3') },
+      vertLine: { color: css('--line'), labelBackgroundColor: css('--text') },
+      horzLine: { color: css('--line'), labelBackgroundColor: css('--text') },
     },
     handleScroll: false,
     handleScale: false,
@@ -56,18 +56,18 @@ export function YieldCurveChart({ curve, forwards, height = 260 }: { curve: Poin
         lastValueVisible: false,
         priceLineVisible: false,
         crosshairMarkerVisible: false,
-        title: 'forward',
+        title: 'between dates',
       })
       f.setData(forwards.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })))
     }
     const s = chart.addSeries(LineSeries, {
-      color: css('--amber'),
+      color: css('--gold-bright'),
       lineWidth: 3,
       pointMarkersVisible: true,
       pointMarkersRadius: 4,
       priceFormat: pctFormat,
       priceLineVisible: false,
-      title: 'implied',
+      title: 'expected',
     })
     s.setData(curve.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })))
     chart.timeScale().fitContent()
@@ -83,7 +83,7 @@ export function HistoryChart({ data, height = 260 }: { data: Point[]; height?: n
     if (!ref.current || data.length === 0) return
     const chart = baseChart(ref.current)
     chart.applyOptions({ timeScale: { timeVisible: true, secondsVisible: false } })
-    const amber = css('--amber')
+    const amber = css('--gold-bright')
     const s = chart.addSeries(AreaSeries, {
       lineColor: amber,
       lineWidth: 2,

@@ -1,0 +1,33 @@
+---
+title: "Guardian and oracle"
+description: "Circuit breakers that can't block exits, and display-only price feeds."
+---
+
+## RiskGuardian
+
+The guardian can stop **new risk**, never exits. It has no ability to move funds.
+
+| Function | Who | Effect |
+| --- | --- | --- |
+| `setGlobalPause(bool)` | Guardian | Stops all new deposits and trades |
+| `setPaused(address target, bool)` | Guardian | Stops deposits or trades on one vault or market |
+| `setAssetAllowed(address, bool)` | Admin (timelock) | Lists or delists a stock for new vaults and deposits |
+| `haltAsset(address)` | CorporateActionEngine | Stops new deposits after an unsupported corporate action |
+| `resumeAsset(address)` | Admin (timelock) | Lifts a halt |
+| `enforceInvariant(address vault)` | Anyone | Pauses a vault whose collateral doesn't cover its claims |
+
+In every state, holders can still **recombine, redeem, claim dividends and withdraw liquidity**.
+
+## XeroOracle
+
+```solidity
+function getPrice(address asset) external view returns (uint256 price, uint256 updatedAt);
+```
+
+Returns USD per tokenized-stock token (WAD, multiplier included) from a Chainlink-style feed, rejecting prices older than the asset's `maxAge` (`StalePrice`). Where Chainlink provides an L2 sequencer-uptime feed, the oracle honours it.
+
+<Info>
+  Prices are informational. They drive dollar values in the app and lens; no vault or market settlement depends on them, so a bad price can't cause a bad trade or redemption.
+</Info>
+
+To value one **share** rather than one token, divide by the token's multiplier, or use `ptPriceUsd + ytPriceUsd` from [`CurveLens`](/developers/reading-data), which is already per share.

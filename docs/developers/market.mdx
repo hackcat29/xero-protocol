@@ -1,0 +1,65 @@
+---
+title: "XeroYieldMarket"
+description: "The pool that trades a vault's dividend token against its tokenized stock."
+---
+
+Each vault has one market. It quotes an **implied rate** `r`: tokenized stock per YT unit per year. The YT price is `r × tau`, where `tau` is years to maturity, so quotes decay toward zero as the dividend window closes, while trades move `r`.
+
+```text
+ytPrice       = impliedRate × tau                     (stock per unit)
+impliedYield  = impliedRate × dividendIndex            (yearly yield in share terms)
+ptPrice       = parValue − ytPrice                     (where parValue = 1 share in stock terms)
+```
+
+The market's ERC-20 is the LP share. The pool's own YT accrues dividends, which are harvested into the stock reserve for LPs before each trade.
+
+## Trading
+
+```solidity
+function swapExactYtForQuote(uint256 ytIn, uint256 minQuoteOut, address to) external returns (uint256 quoteOut);
+function swapExactQuoteForYt(uint256 quoteIn, uint256 minYtOut, address to) external returns (uint256 ytOut);
+```
+
+Sell YT for stock, or buy YT with stock. Both revert with `Slippage` below the minimum and `Expired` at or after maturity.
+
+```solidity
+function quoteYtForQuote(uint256 ytIn) external view returns (uint256 quoteOut, int256 newRate);
+function quoteQuoteForYt(uint256 quoteIn) external view returns (uint256 ytOut, int256 newRate);
+```
+
+Exact quotes for the current state, including the 0.3% fee and the rate after the trade.
+
+## Liquidity
+
+```solidity
+function addLiquidity(uint256 ytMax, uint256 quoteMax, uint256 minLp, address to)
+    external returns (uint256 lp, uint256 ytUsed, uint256 quoteUsed);
+function removeLiquidity(uint256 lp, uint256 minYt, uint256 minQuote, address to)
+    external returns (uint256 ytOut, uint256 quoteOut);
+```
+
+Liquidity is added at the current reserve ratio, so it doesn't move the rate. Removal is pro rata and **always available**, including after maturity and while paused.
+
+## State
+
+| Function | Returns |
+| --- | --- |
+| `lastRate()` | Last traded implied rate (WAD) |
+| `ytPrice()` | YT price in stock (WAD) at the last rate |
+| `tau()` | Years to maturity (WAD) |
+| `fee()` | Swap fee, `0.003e18` |
+| `getState()` | Reserves, rate, scalar and fee in one call |
+| `vault()` | The vault this market belongs to |
+
+## Events
+
+```solidity
+event Swap(address indexed sender, address indexed to, uint256 ytIn, uint256 quoteIn, uint256 ytOut, uint256 quoteOut, int256 impliedRate);
+event LiquidityAdded(address indexed sender, address indexed to, uint256 ytAmount, uint256 quoteAmount, uint256 lp);
+event LiquidityRemoved(address indexed sender, address indexed to, uint256 ytAmount, uint256 quoteAmount, uint256 lp);
+event YieldHarvested(uint256 amount);
+```
+
+## Pricing engine
+
+The curve math lives behind `IXeroMath`. Base uses the Solidity engine (`XeroMathSol`); Arbitrum chains can use the same math compiled to Stylus. Both are tested against shared parity vectors.

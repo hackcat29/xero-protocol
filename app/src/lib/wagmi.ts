@@ -7,10 +7,10 @@ import {
   rainbowWallet,
   walletConnectWallet,
 } from '@rainbow-me/rainbowkit/wallets'
-import { createConfig, createConnector, http } from 'wagmi'
+import { createConfig, createConnector } from 'wagmi'
 import { mock } from 'wagmi/connectors'
 import type { Address } from 'viem'
-import { chain, isDevnet } from './network'
+import { chain, isDevnet, transport } from './network'
 
 const projectId: string | undefined = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID
 
@@ -92,7 +92,7 @@ const connectors = connectorsForWallets(groups, {
 export const wagmiConfig = createConfig({
   chains: [chain],
   connectors,
-  transports: { [chain.id]: http() },
+  transports: { [chain.id]: transport },
   ssr: false,
 })
 

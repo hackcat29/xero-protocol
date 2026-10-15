@@ -1,7 +1,7 @@
 // End-to-end UI test: connects through RainbowKit and runs every trade-ticket flow through real transactions
 // (approve -> simulate -> send -> confirm).
 //   node scripts/e2e.mjs [baseUrl]                          devnet: connects as the Alice persona
-//   E2E_ACCOUNT=xero-testnet node scripts/e2e.mjs [baseUrl] testnet (add E2E_CHAIN=arbitrum-sepolia and
+//   E2E_ACCOUNT=xero-testnet node scripts/e2e.mjs [baseUrl] Base Sepolia (set E2E_CHAIN and
 //                                                           E2E_RPC=https://sepolia-rollup.arbitrum.io/rpc for Arbitrum): injects an EIP-1193 wallet that signs in this
 //                                                           process with that Foundry keystore account (or E2E_KEY),
 //                                                           claims test SCHD from the faucet if short, then runs the flows
@@ -9,7 +9,7 @@ import puppeteer from 'puppeteer-core'
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { createPublicClient, createWalletClient, http } from 'viem'
+import { createPublicClient, createWalletClient, http, nonceManager } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 
 const BASE = process.argv[2] ?? 'http://localhost:5173'
@@ -61,68 +61,82 @@ const tab = (name) => clickText('.ticket-tabs [role="tab"]', name)
 
 // E2E_CHAIN picks the app's network (a ?chain= id or slug, remembered by the app) and E2E_RPC must match it
 const chainParam = process.env.E2E_CHAIN ? `&chain=${process.env.E2E_CHAIN}` : ''
-await page.goto(`${BASE}/markets/SCHD?m=1Y${chainParam}`, { waitUntil: 'domcontentloaded' })
+await page.goto(`${BASE}/markets/SCHDc?m=1Y${chainParam}`, { waitUntil: 'domcontentloaded' })
 await page.waitForSelector('.ticket .amount')
 
 // connect through the RainbowKit modal: Alice on the devnet, the injected test wallet on testnet
-await clickText('button', 'Connect wallet')
+await clickText('.ticket button', 'Connect wallet')
 await clickText('button', wallet ? 'Xero E2E' : 'Alice · devnet')
 await page.waitForSelector('.btn-account', { timeout: 15000 })
 console.log(`ok   connected as ${wallet ? wallet.address : 'Alice'}`)
 
-// testnet wallets start empty: claim test SCHD through the console's faucet (once a day per address)
+// testnet wallets start empty: claim test SCHD from the Test tokens dialog
 if (wallet && (await wallet.schdBalance()) < 150n * 10n ** 18n) {
-  await clickText('button', 'Console')
-  await clickText('.console-faucet button', 'Get SCHD')
+  await clickText('button', 'Test tokens')
+  await clickText('.console-stocks button', 'SCHD')
   await expectToast('Claim test SCHD')
   await page.keyboard.press('Escape')
 }
+const primary = (text) => clickText('.ticket button.btn-primary, .ticket button.btn-gold', text, 20000)
 
-// 1. buy yield
-await tab('Yield')
+// 1. buy at a discount (router.buyPrincipal)
+await tab('Discount')
 await typeInto(0, '10')
-await clickText('.ticket button', 'Buy xSCHD-YT-1Y', 20000)
-await expectToast('Buy xSCHD-YT-1Y')
+await primary('Buy at')
+await expectToast('Buy SCHD at a discount')
 
-// 2. sell some yield back
-await clickText('.ticket .seg button', 'Sell yield')
-await typeInto(0, '50')
-await clickText('.ticket button', 'Sell xSCHD-YT-1Y', 20000)
-await expectToast('Sell xSCHD-YT-1Y')
+// 2. take dividends upfront (router.stripAndSellYield)
+await tab('Upfront')
+await typeInto(0, '20')
+await primary('Get my dividends now')
+await expectToast('Get SCHD dividends upfront')
 
-// 3. fix: strip and sell yield in one router transaction
-await tab('Fix')
-await typeInto(0, '100')
-await clickText('.ticket button', 'Sell future dividends', 20000)
-await expectToast('Fix SCHD dividends')
+// 3. buy dividend tokens, then sell some back
+await tab('Dividends')
+await typeInto(0, '10')
+await primary('Buy dividends')
+await expectToast('Buy SCHD dividend token')
+await clickText('.ticket .seg button', 'Sell dividends')
+await typeInto(0, '5')
+await primary('Sell dividends')
+await expectToast('Sell SCHD dividend token')
 
-// 4. strip
-await tab('Strip')
+// 4. split shares, then rejoin part of them
+await tab('More')
+await clickText('.ticket .seg button', 'Split shares')
 await typeInto(0, '25')
-await clickText('.ticket button.btn-primary', 'Strip', 20000)
-await expectToast('Strip SCHD')
-
-// 5. recombine part of it
+await primary('Split')
+await expectToast('Split SCHD')
 await tab('Redeem')
 await typeInto(0, '5')
-await clickText('.ticket button.btn-primary', 'Recombine', 20000)
-await expectToast('Recombine SCHD')
+await primary('Rejoin into shares')
+await expectToast('Rejoin SCHD')
 
-// 6. add liquidity
-await tab('Pool')
+// 5. add liquidity
+await tab('More')
+await clickText('.ticket .seg button', 'Add liquidity')
 await typeInto(0, '5')
-await clickText('.ticket button.btn-primary', 'Add liquidity', 20000)
+await primary('Add liquidity')
 await expectToast('Add liquidity')
+
+// 6. the dedicated discount page, on another maturity
+await clickText('.app-tabs a', 'Buy at a discount')
+await clickText('.terms button', '6 mo')
+await page.waitForFunction(() => new URL(location.href).searchParams.get('m') === '6M')
+await new Promise((r) => setTimeout(r, 800)) // the ticket remounts for the new maturity
+await typeInto(0, '5')
+await primary('Buy at')
+await expectToast('Buy SCHD at a discount')
 
 // 7. portfolio shows the positions (client-side navigation), and the session survives a reload
 await clickText('.app-tabs a', 'Portfolio')
-await page.waitForSelector('.markets-table tbody tr', { timeout: 20000 })
+await page.waitForSelector('.table tbody tr', { timeout: 20000 })
 await page.reload({ waitUntil: 'domcontentloaded' })
 const reconnected = await page.waitForSelector('.btn-account', { timeout: 15000 }).then(() => true, () => false)
 console.log(`${reconnected ? 'ok  ' : 'FAIL'} wallet session restored after reload`)
 if (!reconnected) process.exitCode = 1
-await page.waitForSelector('.markets-table tbody tr', { timeout: 20000 }).catch(() => {})
-const rows = await page.$$eval('.markets-table tbody tr', (r) => r.map((x) => x.querySelector('b')?.textContent))
+await page.waitForSelector('.table tbody tr', { timeout: 20000 }).catch(() => {})
+const rows = await page.$$eval('.table tbody tr', (r) => r.map((x) => x.querySelector('b')?.textContent))
 console.log(`ok   portfolio lists ${rows.length} position(s): ${rows.join(', ')}`)
 
 if (errors.length) {
@@ -140,8 +154,8 @@ async function injectedWallet(page) {
     key = execFileSync('cast', ['wallet', 'private-key', '--account', name, ...(existsSync(pw) ? ['--password-file', pw] : [])], { encoding: 'utf8' }).trim()
   }
   if (!key) return undefined
-  const rpc = process.env.E2E_RPC ?? 'https://rpc.testnet.chain.robinhood.com/rpc'
-  const account = privateKeyToAccount(key)
+  const rpc = process.env.E2E_RPC ?? 'https://base-sepolia-rpc.publicnode.com'
+  const account = privateKeyToAccount(key, { nonceManager }) // track nonces locally: load-balanced RPCs can lag
   const pub = createPublicClient({ transport: http(rpc) })
   const chainId = await pub.getChainId()
   const chain = { id: chainId, name: `chain-${chainId}`, nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: { default: { http: [rpc] } } }
@@ -201,7 +215,9 @@ async function injectedWallet(page) {
   })
 
   const { default: book } = await import(`../src/deployments/${chainId}.json`, { with: { type: 'json' } })
-  const schd = book.stocks[1] // AAPL, SCHD, XOM, SGOV
+  const symbolAbi = [{ type: 'function', name: 'symbol', stateMutability: 'view', inputs: [], outputs: [{ type: 'string' }] }]
+  const symbols = await Promise.all(book.stocks.map((t) => pub.readContract({ address: t, abi: symbolAbi, functionName: 'symbol' })))
+  const schd = book.stocks[symbols.findIndex((x) => x === 'SCHDc' || x === 'SCHD')]
   const schdBalance = () => pub.readContract({ address: schd, abi: [{ type: 'function', name: 'balanceOf', stateMutability: 'view', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }] }], functionName: 'balanceOf', args: [account.address] })
   console.log(`     wallet ${account.address} on chain ${chainId}, ${Number(await pub.getBalance({ address: account.address })) / 1e18} ETH`)
   return { address: account.address, schdBalance }

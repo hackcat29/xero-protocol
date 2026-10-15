@@ -1,4 +1,4 @@
-import { createPublicClient, defineChain, http, type Abi, type Address, type Chain, type PublicClient } from 'viem'
+import { createPublicClient, defineChain, fallback, http, type Abi, type Address, type Chain, type PublicClient, type Transport } from 'viem'
 import abisJson from './abis.json'
 
 export const baseMainnet = defineChain({
@@ -109,7 +109,18 @@ export function switchNetwork(id: number) {
   window.location.reload()
 }
 
-export const publicClient: PublicClient = createPublicClient({ chain, transport: http() })
+/** Backup endpoints per chain. Public RPCs drop or rate-limit requests under load, so reads and simulations
+ *  fall through to the next endpoint instead of failing the user's action. */
+const BACKUP_RPCS: Record<number, string[]> = {
+  8453: ['https://base-rpc.publicnode.com'],
+  84532: ['https://sepolia.base.org'],
+}
+export const transport: Transport = fallback(
+  [chain.rpcUrls.default.http[0], ...(BACKUP_RPCS[chain.id] ?? [])].map((url) => http(url, { retryCount: 2 })),
+)
+export const publicClient: PublicClient = createPublicClient({ chain, transport })
+/** Event queries stay on the primary endpoint: backups can have much smaller block-range limits. */
+export const logClient: PublicClient = createPublicClient({ chain, transport: http(chain.rpcUrls.default.http[0], { retryCount: 3 }) })
 
 export const abis = abisJson as unknown as Record<
   | 'XeroVault'

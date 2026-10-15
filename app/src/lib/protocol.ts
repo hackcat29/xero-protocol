@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { zeroAddress, type Address } from 'viem'
-import { abis, book, chainId, isDevnet, publicClient, read } from './network'
+import { abis, book, chainId, isDevnet, logClient, publicClient, read } from './network'
 import { WAD, toNum } from './format'
 
 const REFRESH = isDevnet ? 4_000 : 10_000
@@ -40,9 +40,12 @@ export type B20Market = LensPoint & {
   ytSymbol: string
   liquidityUsd: number
   tvlUsd: number
-  ptFixedYield: number
-  ptDiscountPct: number
-  ytLeverage: number
+  ptFixedYield: number // annualised return from buying principal at today's discount, %
+  ptDiscountPct: number // discount to today's share price; also the share of value paid out upfront, %
+  ytLeverage: number // share price per dividend token
+  unitUsd: number // one share's worth today
+  ptUsd: number
+  ytUsd: number
   live: boolean
   parValue: bigint
 }
@@ -108,17 +111,17 @@ async function loadProtocol(): Promise<Protocol> {
       const label = remainingSecs <= 8 * 86400 ? '1W' : remainingSecs <= 95 * 86400 ? '3M' : remainingSecs <= 185 * 86400 ? '6M' : '1Y'
       const id = `${c.symbol}-${label}`
 
-      // PT Fixed Yield & Discount calculation
-      const ptPrice = toNum(p.ptPriceUsd)
-      const spotPrice = rawPriceUsd
-      const discountUsd = Math.max(0, spotPrice - ptPrice)
-      const ptDiscountPct = spotPrice > 0 ? (discountUsd / spotPrice) * 100 : 0
+      // One unit (1 PT + 1 YT) is one share's worth of the stock today, so the discount and the upfront payout are
+      // both the YT's share of the unit's value. Comparing against the raw token price would count dividends already
+      // reinvested into the token and overstate the discount.
+      const ptUsd = toNum(p.ptPriceUsd)
+      const ytUsd = toNum(p.ytPriceUsd)
+      const unitUsd = ptUsd + ytUsd
       const years = Math.max(remainingSecs, 1) / (365 * 86400)
-      const ptFixedYield = ptPrice > 0 && years > 0 ? (discountUsd / ptPrice / years) * 100 : toNum(p.impliedYield) * 100
-
-      // YT Leverage: Spot Price / YT Price
-      const ytPrice = toNum(p.ytPriceUsd)
-      const ytLeverage = ytPrice > 0 ? Math.min(250, spotPrice / ytPrice) : 50
+      const ptDiscountPct = unitUsd > 0 ? (ytUsd / unitUsd) * 100 : 0
+      const ptFixedYield = ptUsd > 0 ? (ytUsd / ptUsd / years) * 100 : 0
+      const ytLeverage = ytUsd > 0 ? Math.min(250, unitUsd / ytUsd) : 0
+      const ytPrice = ytUsd
 
       const ptSymbol = `x${c.symbol}-PT-${label}`
       const ytSymbol = `x${c.symbol}-YT-${label}`
@@ -126,7 +129,7 @@ async function loadProtocol(): Promise<Protocol> {
       const reserveYtUnits = toNum(p.reserveYt)
       const reserveStock = toNum(p.reserveQuote)
       const liquidityUsd = (reserveYtUnits * ytPrice) + (reserveStock * rawPriceUsd)
-      const tvlUsd = toNum(p.totalUnits) * rawPriceUsd
+      const tvlUsd = toNum(p.totalUnits) * unitUsd
 
       const parValue = p.ptPrice + p.ytPrice > 0n ? p.ptPrice + p.ytPrice : WAD
 
@@ -144,6 +147,9 @@ async function loadProtocol(): Promise<Protocol> {
         ptFixedYield,
         ptDiscountPct,
         ytLeverage,
+        unitUsd,
+        ptUsd,
+        ytUsd,
         live: !p.matured && p.market !== zeroAddress,
         parValue,
       }
@@ -291,7 +297,7 @@ const scanned = new Map<Address, { to: bigint; logs: SwapLog[] }>()
 const blocks = new Map<bigint, number>() // block number -> timestamp
 
 function getSwapLogs(market: Address, fromBlock: bigint, toBlock: bigint) {
-  return publicClient.getContractEvents({ address: market, abi: abis.XeroYieldMarket, eventName: 'Swap', fromBlock, toBlock })
+  return logClient.getContractEvents({ address: market, abi: abis.XeroYieldMarket, eventName: 'Swap', fromBlock, toBlock })
 }
 
 async function swapLogsBetween(market: Address, from: bigint, to: bigint, newestFirst: SwapLog[], limit: number) {
@@ -303,8 +309,8 @@ async function swapLogsBetween(market: Address, from: bigint, to: bigint, newest
       newestFirst.push(...chunk.reverse())
       hi = lo - 1n
     } catch (e) {
-      if (logRange <= 100n) throw e
-      logRange /= 2n // provider rejected the range: narrow it and retry
+      if (logRange <= 100n || !/range/i.test(String((e as Error)?.message))) throw e
+      logRange /= 2n // provider rejected the block range: narrow it and retry
     }
   }
   return newestFirst

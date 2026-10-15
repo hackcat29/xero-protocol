@@ -1,0 +1,52 @@
+---
+title: "Corporate actions"
+description: "How splits and other corporate actions are reported and applied."
+---
+
+Tokenized stocks express dividends **and** splits through the same multiplier. Xero must credit only dividends to dividend tokens, so structural changes are reported to the `CorporateActionEngine` and divided out by every vault.
+
+## Reporting
+
+```solidity
+function report(
+    address token,
+    ActionType kind,
+    uint64 effectiveAt,
+    uint128 value,
+    uint128 value2,
+    bytes32 ref
+) external; // REPORTER_ROLE
+```
+
+An action becomes effective once `quorum` distinct reporters submit the identical payload. `ref` is a unique identifier from the data source, so the same action can't be applied twice.
+
+| Constraint | Value |
+| --- | --- |
+| Cash dividends may be backdated by at most | 1 day |
+| Structural actions may be backdated by at most | 30 days, so a missed split can always be resolved |
+| Actions may be reported ahead by at most | 120 days |
+| Largest split ratio | 100 : 1 |
+| Largest multiplier growth one cash dividend may authorise | 50% |
+
+## Action types
+
+| Type | Handling |
+| --- | --- |
+| `CASH_DIVIDEND` | Authorises the vault's index to rise by the reinvested amount |
+| `STOCK_DIVIDEND`, `FORWARD_SPLIT`, `REVERSE_SPLIT` | Structural: divided out of the multiplier, so value is unchanged |
+| `NAME_CHANGE` | No effect on balances |
+| `UNIT_SPLIT`, `SPIN_OFF`, `CASH_MERGER`, `STOCK_MERGER`, `STOCK_AND_CASH_MERGER`, `REDEMPTION`, `WORTHLESS_REMOVAL`, `RIGHTS_DISTRIBUTION` | Unsupported: the guardian halts new deposits for the stock. Existing positions can always exit |
+
+## What vaults do
+
+On each `sync`, a vault applies newly effective actions in order, then checks the multiplier:
+
+- Explained growth (a reported dividend, or within `maxGrowthPerSync`) is credited to dividend tokens.
+- A reported split updates the structural factor `S`, leaving the dividend index unchanged.
+- Anything unexplained **freezes** the vault until it's reported. Recombination stays open.
+
+## The keeper
+
+`services/keeper` is a Node service that watches issuer corporate-action data, cross-checks it against each token's pending multiplier, and submits reports. Run several independent keepers with distinct keys to meet the quorum.
+
+<Note>On Base Sepolia the quorum is 1 and the test issuer reports its own simulated actions.</Note>

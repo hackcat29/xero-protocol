@@ -1,0 +1,37 @@
+---
+title: "Risks"
+description: "What can go wrong, in plain terms."
+---
+
+<Warning>
+  Xero currently runs on Base Sepolia, a test network. Test tokens have no value. Nothing here is financial advice.
+</Warning>
+
+## Market risk
+
+Share tokens rise and fall with the stock, exactly like owning the share. A discount doesn't protect you from a falling share price; it only means you paid less than everyone who bought the share outright.
+
+## Dividend risk
+
+- **Buying at a discount** and **taking dividends upfront** lock in your numbers on day one. Changes to the dividend afterwards don't affect you.
+- **Dividend tokens** depend entirely on what's paid. If a company cuts or suspends its dividend, they can lose most of their value.
+
+## Waiting until maturity
+
+Share tokens are designed to be held until maturity. There's no market for them on their own yet. You can always rejoin a share token with a matching dividend token, but if you've sold the dividend token, you'll need to buy one back.
+
+## Smart-contract risk
+
+Xero's contracts are open source and extensively tested, including fuzzing and invariant tests, but they have not been independently audited. Bugs in Xero, in the tokenized stocks, or in Base itself could cause losses.
+
+## Corporate actions
+
+Stock splits are reported by independent keepers. Until a split is reported, the affected vault pauses new deposits. Mergers, spin-offs and other actions Xero can't represent stop new deposits for that stock; existing positions can always rejoin, redeem and claim.
+
+## Issuer risk
+
+A tokenized stock is only as good as its issuer's backing and redemption process. Xero doesn't change that risk.
+
+## Price data
+
+Dollar values in the app come from price feeds and are for display. No trade or redemption depends on them, so a wrong or stale price can't cause a bad settlement, but it can make the dollar figures you see temporarily wrong.

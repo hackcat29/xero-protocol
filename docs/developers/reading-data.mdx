@@ -1,0 +1,86 @@
+---
+title: "Reading market data"
+description: "Get every maturity, price and implied yield for a stock in one call."
+---
+
+`CurveLens.getCurve(token)` returns everything the Xero app shows for a stock: each maturity's vault and market, prices in stock and USD, implied yields and the forward curve between maturities.
+
+```solidity
+function getCurve(address token) external view returns (Curve memory);
+
+struct Curve {
+    address token;
+    string symbol;
+    string name;
+    uint256 multiplier;     // shares per token
+    uint256 priceUsd;       // USD per token (multiplier included)
+    bool priceFresh;
+    CurvePoint[] points;    // one per maturity, sorted by date
+    int256[] forwards;      // implied yield between consecutive live maturities
+}
+
+struct CurvePoint {
+    address vault;
+    address market;
+    address principalToken;
+    address yieldToken;
+    uint64 maturity;
+    bool matured;
+    bool frozen;
+    bool halted;
+    uint256 tau;            // years to maturity (WAD)
+    int256 impliedRate;     // stock per YT unit per year
+    int256 impliedYield;    // yearly dividend yield in share terms (WAD)
+    uint256 ytPrice;        // stock per unit
+    uint256 ptPrice;        // stock per unit
+    uint256 ytPriceUsd;     // USD per unit, 0 if the price is stale
+    uint256 ptPriceUsd;
+    uint256 dividendIndex;
+    uint256 structuralFactor;
+    uint256 totalUnits;
+    uint256 reserveYt;
+    uint256 reserveQuote;
+}
+```
+
+## Example with viem
+
+```ts
+import { createPublicClient, http, formatUnits } from 'viem'
+import { baseSepolia } from 'viem/chains'
+
+const client = createPublicClient({ chain: baseSepolia, transport: http('https://base-sepolia-rpc.publicnode.com') })
+
+const LENS = '0x651665e9416D4edeE40394559EEd6AF3808b02eb'
+const SCHD = '0x7907723540f90dbEdFfe7F39dA23FC022D0dd81f'
+
+const curve = await client.readContract({ address: LENS, abi: curveLensAbi, functionName: 'getCurve', args: [SCHD] })
+
+for (const p of curve.points.filter((p) => !p.matured)) {
+  const pt = Number(formatUnits(p.ptPriceUsd, 18))
+  const yt = Number(formatUnits(p.ytPriceUsd, 18))
+  const share = pt + yt // one share's worth today
+  console.log(new Date(Number(p.maturity) * 1000).toDateString(), {
+    sharePrice: share,
+    discountPrice: pt,
+    discount: yt / share,
+    expectedYield: Number(formatUnits(p.impliedYield, 18)),
+  })
+}
+```
+
+<Tip>
+  Compute the discount as `ytPriceUsd ÷ (ptPriceUsd + ytPriceUsd)`. Don't compare `ptPriceUsd` with the oracle's token price: that price includes past reinvested dividends and overstates the discount.
+</Tip>
+
+## Events worth indexing
+
+| Event | Contract | Use |
+| --- | --- | --- |
+| `Swap` | XeroYieldMarket | Trade history and implied-yield charts |
+| `Stripped`, `Recombined`, `Redeemed` | XeroVault | Deposits and exits |
+| `YieldClaimed` | XeroVault | Dividends paid to holders |
+| `IndexUpdated`, `Frozen` | XeroVault | Dividend crediting and pauses |
+| `ActionEffective` | CorporateActionEngine | Splits and dividends applied |
+
+ABIs are generated from the Foundry build into `app/src/lib/abis.json` by `app/scripts/export-abis.mjs`.

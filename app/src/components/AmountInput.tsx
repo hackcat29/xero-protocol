@@ -5,7 +5,10 @@ type Props = {
   label: string
   value: string
   onChange?: (v: string) => void
+  /** Token symbol used for the icon. */
   symbol: string
+  /** What the person reads next to the amount; defaults to the symbol. */
+  tokenLabel?: string
   kind?: 'stock' | 'pt' | 'yt' | 'lp'
   balance?: bigint
   usd?: string
@@ -13,7 +16,8 @@ type Props = {
   error?: boolean
 }
 
-export function AmountInput({ label, value, onChange, symbol, kind = 'stock', balance, usd, readOnly, error }: Props) {
+export function AmountInput({ label, value, onChange, symbol, tokenLabel, kind = 'stock', balance, usd, readOnly, error }: Props) {
+  const shown = tokenLabel ?? symbol
   return (
     <div className={`amount ${readOnly ? 'amount-ro' : ''} ${error ? 'amount-err' : ''}`}>
       <div className="amount-top">
@@ -35,12 +39,12 @@ export function AmountInput({ label, value, onChange, symbol, kind = 'stock', ba
           placeholder="0.00"
           value={value}
           readOnly={readOnly}
-          aria-label={`${label} (${symbol})`}
+          aria-label={`${label} (${shown})`}
           onChange={(e) => onChange?.(e.target.value.replace(/[^0-9.]/g, ''))}
         />
-        <span className="amount-token">
-          <TokenIcon symbol={symbol} kind={kind} size={22} />
-          {symbol}
+        <span className="amount-token" title={shown}>
+          <TokenIcon symbol={symbol} kind={kind} size={24} />
+          {shown}
         </span>
       </div>
       {usd && <div className="amount-usd">{usd}</div>}

@@ -1,0 +1,69 @@
+---
+title: "Local development"
+description: "Build, test and run Xero on your machine."
+---
+
+## Requirements
+
+- [Foundry](https://book.getfoundry.sh/getting-started/installation)
+- Node 22 and pnpm 9
+
+## Contracts
+
+```bash
+cd contracts
+forge build
+forge test          # unit, fuzz, invariant and parity tests
+```
+
+## Run everything locally
+
+<Steps>
+  <Step title="Start a local chain">
+    ```bash
+    anvil
+    ```
+  </Step>
+  <Step title="Deploy the Base markets">
+    ```bash
+    cd contracts
+    forge script script/DeployBase.s.sol --rpc-url http://127.0.0.1:8545 --broadcast \
+      --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
+      --sender 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+    ```
+    This deploys six mock stocks with four maturities each, seeds every market, and writes the address book to `app/src/deployments/31337.json`. The key is Anvil's public first account, which becomes the test issuer.
+  </Step>
+  <Step title="Run the app">
+    ```bash
+    cd app
+    pnpm install
+    VITE_CHAIN_ID=31337 pnpm dev
+    ```
+    Open `http://localhost:5173`. On the local chain, the **Test tokens** dialog also lets the issuer account pay dividends, split stocks, move prices and advance time.
+  </Step>
+</Steps>
+
+## Deploy to Base Sepolia
+
+```bash
+cd contracts
+forge script script/DeployBase.s.sol --rpc-url https://sepolia.base.org \
+  --account <keystore> --sender <address> --broadcast --slow
+```
+
+Pass `--sender` so the script records your address as the deployer, and set `DEMO_ACTORS=<address>` so test balances go to you rather than to Anvil's default accounts. If the RPC drops a request mid-broadcast, rerun with `--resume`.
+
+Refresh the test price feeds every day or two so they don't go stale:
+
+```bash
+./scripts/testnet-feeds.sh base-sepolia
+```
+
+## App environment variables
+
+| Variable | Purpose |
+| --- | --- |
+| `VITE_CHAIN_ID` | Default network: `84532` (Base Sepolia), `31337` (local) |
+| `VITE_BASE_SEPOLIA_RPC` | Override the Base Sepolia RPC |
+| `VITE_WALLETCONNECT_PROJECT_ID` | WalletConnect project for mobile wallets |
+| `VITE_DOCS_URL` | Where the app's Docs links point |
