@@ -11,7 +11,7 @@ import {RiskGuardian} from "../src/RiskGuardian.sol";
 import {CorporateActionEngine} from "../src/CorporateActionEngine.sol";
 import {ICorporateActionEngine} from "../src/interfaces/ICorporateActionEngine.sol";
 import {IRiskGuardian} from "../src/interfaces/IRiskGuardian.sol";
-import {IRobinhoodStockToken} from "../src/interfaces/IScaledUIAmount.sol";
+import {IStockToken} from "../src/interfaces/IScaledUIAmount.sol";
 import {IXeroMath} from "../src/interfaces/IXeroMath.sol";
 import {IXeroOracle} from "../src/interfaces/IXeroOracle.sol";
 import {XeroFactory} from "../src/XeroFactory.sol";
@@ -122,7 +122,7 @@ contract DeployProduction is Script {
         address usdg = vm.parseJsonAddress(json, ".usdg");
         require(IERC20Metadata(usdg).decimals() == 6, "USDG decimals");
         for (uint256 i; i < tokens.length; ++i) {
-            IRobinhoodStockToken t = IRobinhoodStockToken(tokens[i]);
+            IStockToken t = IStockToken(tokens[i]);
             string memory sym = vm.parseJsonString(json, string.concat(".assets.symbols[", vm.toString(i), "]"));
             require(keccak256(bytes(IERC20Metadata(address(t)).symbol())) == keccak256(bytes(sym)), "symbol mismatch");
             require(IERC20Metadata(address(t)).decimals() == 18, "token decimals");

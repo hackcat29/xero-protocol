@@ -3,11 +3,10 @@ import { Link } from 'react-router'
 import { Guilloche, StockMark } from '../components/Brand'
 import { DOCS_URL } from '../components/Nav'
 import { MarketsTable } from './Markets'
-import { company, term, ticker } from '../lib/assets'
+import { FEATURED, FLAGSHIP, company, term, ticker } from '../lib/assets'
 import { date, pct, usd } from '../lib/format'
 import { useProtocol, type Asset, type Market } from '../lib/protocol'
 
-const FEATURED = ['SCHDc', 'SPYc', 'AAPLc', 'NVDAc']
 
 /** The 1-year market for a stock: the longest maturity, so the clearest example of each benefit. */
 const yearMarket = (a: Asset) => a.markets.find((m) => m.live && m.label === '1Y') ?? a.markets.filter((m) => m.live).at(-1)
@@ -15,8 +14,8 @@ const yearMarket = (a: Asset) => a.markets.find((m) => m.live && m.label === '1Y
 export function Landing() {
   const { data } = useProtocol()
   const assets = (data?.assets ?? []).filter((a) => FEATURED.includes(a.symbol)).sort((a, b) => FEATURED.indexOf(a.symbol) - FEATURED.indexOf(b.symbol))
-  const schd = data?.assets.find((a) => a.symbol === 'SCHDc')
-  const schdYear = schd && yearMarket(schd)
+  const flagship = data?.assets.find((a) => a.symbol === FLAGSHIP)
+  const flagYear = flagship && yearMarket(flagship)
   const live = data?.markets.filter((m) => m.live) ?? []
   const best = live.reduce<Market | undefined>((b, m) => (!b || m.ptDiscountPct > b.ptDiscountPct ? m : b), undefined)
   const bestUpfront = live.reduce<Market | undefined>((b, m) => (!b || m.ytUsd > b.ytUsd ? m : b), undefined)
@@ -51,7 +50,7 @@ export function Landing() {
         <div className="proof-inner">
           <div><span>Best discount today</span><b>{best ? `${best.ptDiscountPct.toFixed(2)}%` : '—'}</b></div>
           <div><span>Paid upfront today on 100 {bestUpfront ? ticker(bestUpfront.symbol) : 'shares'}</span><b>{bestUpfront ? usd(bestUpfront.ytUsd * 100) : '—'}</b></div>
-          <div><span>Stocks and ETFs</span><b>{data ? data.assets.length : '—'}</b></div>
+          <div><span>Stocks on Base</span><b>{data ? data.assets.length : '—'}</b></div>
           <div><span>Maturities</span><b>1 week to 1 year</b></div>
         </div>
       </section>
@@ -73,7 +72,7 @@ export function Landing() {
             </ul>
             <Link to="/discount" className="btn btn-primary">See today's discounts</Link>
           </div>
-          {schd && schdYear ? <DiscountExample asset={schd} market={schdYear} /> : <ExampleSkeleton />}
+          {flagship && flagYear ? <DiscountExample asset={flagship} market={flagYear} /> : <ExampleSkeleton />}
         </div>
       </section>
 
@@ -94,7 +93,7 @@ export function Landing() {
             </ul>
             <Link to="/upfront" className="btn btn-gold">See what your shares pay</Link>
           </div>
-          {schd && schdYear ? <UpfrontExample asset={schd} market={schdYear} /> : <ExampleSkeleton />}
+          {flagship && flagYear ? <UpfrontExample asset={flagship} market={flagYear} /> : <ExampleSkeleton />}
         </div>
       </section>
 
@@ -110,7 +109,7 @@ export function Landing() {
               and anyone holding both can rejoin them into the share before that date.
             </p>
           </div>
-          {schd && schdYear ? <Anatomy asset={schd} market={schdYear} /> : <ExampleSkeleton />}
+          {flagship && flagYear ? <Anatomy asset={flagship} market={flagYear} /> : <ExampleSkeleton />}
         </div>
         <div className="also">
           <Link to="/markets">
@@ -164,7 +163,7 @@ export function Landing() {
           </div>
           <div className="faq-list">
             <Faq q="What is a tokenized stock?">
-              A token on a blockchain that tracks one share of a real company, like Apple or the SPY ETF. On Base, dividends are reinvested into the
+              A token on a blockchain that tracks one share of a real company, like Apple or Microsoft. On Base, Coinbase issues them as B20 tokens and dividends are reinvested into the
               token automatically, so each token slowly grows into more than one share.
             </Faq>
             <Faq q="Where does the discount come from?">
@@ -200,7 +199,7 @@ export function Landing() {
           <Guilloche size={620} />
           <div>
             <h2>Try Xero with free test tokens</h2>
-            <p>Claim test versions of six stocks and ETFs, then buy at a discount or take dividends upfront. It takes about a minute.</p>
+            <p>Claim test versions of the stocks on Base, then buy at a discount or take dividends upfront. It takes about a minute.</p>
           </div>
           <Link to="/discount" className="btn btn-lg">Open the app</Link>
         </div>
@@ -213,7 +212,7 @@ export function Landing() {
 
 function QuoteCard({ assets }: { assets: Asset[] }) {
   const [mode, setMode] = useState<'discount' | 'upfront'>('discount')
-  const [sym, setSym] = useState('SCHDc')
+  const [sym, setSym] = useState(FLAGSHIP)
   const asset = assets.find((a) => a.symbol === sym) ?? assets[0]
   const m = asset && yearMarket(asset)
 

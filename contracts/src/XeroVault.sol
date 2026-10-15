@@ -7,7 +7,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {IXeroVault} from "./interfaces/IXeroVault.sol";
-import {IRobinhoodStockToken} from "./interfaces/IScaledUIAmount.sol";
+import {IStockToken} from "./interfaces/IScaledUIAmount.sol";
 import {ICorporateActionEngine} from "./interfaces/ICorporateActionEngine.sol";
 import {IRiskGuardian} from "./interfaces/IRiskGuardian.sol";
 import {XeroComponentToken} from "./tokens/XeroComponentToken.sol";
@@ -20,7 +20,7 @@ interface IXeroFactoryConfig {
 }
 
 /// @title XeroVault
-/// @notice Splits one ERC-8056 Stock Token (e.g. a Robinhood Stock Token) for one maturity into
+/// @notice Splits one ERC-8056 Stock Token (e.g. a Coinbase B20 stock on Base) for one maturity into
 ///         a Principal Token (PT) and a Yield Token (YT).
 ///
 /// Economics
@@ -52,7 +52,7 @@ contract XeroVault is IXeroVault, ReentrancyGuard {
     uint256 internal constant ROUNDING_TOLERANCE = 1e12;
 
     IXeroFactoryConfig public immutable factory;
-    IRobinhoodStockToken internal immutable _token;
+    IStockToken internal immutable _token;
     ICorporateActionEngine public immutable engine;
     IRiskGuardian public immutable guardian;
     uint64 public immutable maturity;
@@ -100,7 +100,7 @@ contract XeroVault is IXeroVault, ReentrancyGuard {
     error BadMultiplier();
 
     constructor(
-        IRobinhoodStockToken token_,
+        IStockToken token_,
         ICorporateActionEngine engine_,
         IRiskGuardian guardian_,
         uint64 maturity_,

@@ -7,7 +7,7 @@ import { HistoryChart, YieldCurveChart, type Point } from '../components/Charts'
 import { Info, Skeleton, Stat } from '../components/Info'
 import { TradeTicket, type TicketTab } from '../components/TradeTicket'
 import { WatchButton } from '../components/Watch'
-import { company, ptName, stockInfo, term, ticker, ytName } from '../lib/assets'
+import { company, ptName, term, ticker, ytName } from '../lib/assets'
 import { WAD, amount, compactUsd, date, duration, pct, short, timeAgo, toNum, usd } from '../lib/format'
 import { explorer } from '../lib/network'
 import { usePortfolio, useProtocol, useTrades, type Asset, type Market, type Position, type Trade } from '../lib/protocol'
@@ -30,17 +30,17 @@ export function AssetPage() {
       </div>
     )
   }
-  if (!asset || !market) {
+  if (!asset) {
     return (
       <div className="page">
         <div className="card empty-state">
-          <h3>We don't list {symbol?.toUpperCase()} yet</h3>
+          <h3>{symbol?.toUpperCase()} isn't tokenized on Base yet</h3>
           <Link to="/markets" className="btn">Back to markets</Link>
         </div>
       </div>
     )
   }
-  const info = stockInfo(asset.symbol)
+  if (!market) return <NoDividend asset={asset} />
 
   return (
     <div className="page">
@@ -52,7 +52,7 @@ export function AssetPage() {
           <StockMark symbol={asset.symbol} size={56} />
           <div>
             <h1>{company(asset.symbol)}</h1>
-            <p>{ticker(asset.symbol)} · {info.kind === 'etf' ? 'ETF' : 'Stock'} · tokenized on Base as {asset.symbol}</p>
+            <p>{ticker(asset.symbol)} · Coinbase B20 stock on Base · {asset.symbol}</p>
           </div>
         </div>
         <div className="asset-side">
@@ -211,5 +211,43 @@ function PositionCard({ asset, market }: { asset: Asset; market: Market }) {
         <div className="row total"><span>Value today</span><b>{usd(p.valueUsd)}</b></div>
       </div>
     </section>
+  )
+}
+
+/** A listed stock that pays no dividend: show the price and explain why there's nothing to trade. */
+function NoDividend({ asset }: { asset: Asset }) {
+  return (
+    <div className="page">
+      <nav className="crumbs" aria-label="Breadcrumb">
+        <Link to="/markets">Markets</Link> <span>/</span> {ticker(asset.symbol)}
+      </nav>
+      <header className="asset-h">
+        <div className="asset-title">
+          <StockMark symbol={asset.symbol} size={56} />
+          <div>
+            <h1>{company(asset.symbol)}</h1>
+            <p>{ticker(asset.symbol)} · Coinbase B20 stock on Base · {asset.symbol}</p>
+          </div>
+        </div>
+        <div className="asset-side">
+          <WatchButton symbol={asset.symbol} label />
+          <div className="asset-price">
+            <b>{asset.priceFresh ? usd(asset.sharePriceUsd) : '—'}</b>
+            <span>Price per share</span>
+          </div>
+        </div>
+      </header>
+      <section className="card empty-state">
+        <span className="tag">No dividend</span>
+        <h3>{company(asset.symbol)} doesn't pay a dividend</h3>
+        <p className="sub" style={{ maxWidth: 520 }}>
+          Xero splits a share into the share and its dividends. With no dividend there's nothing to split, so there's no discount to
+          buy and nothing to take upfront. Markets open if {company(asset.symbol)} starts paying one.
+        </p>
+        <div className="row-btns" style={{ justifyContent: 'center' }}>
+          <Link to="/markets?f=dividend" className="btn btn-primary">See stocks that pay dividends</Link>
+        </div>
+      </section>
+    </div>
   )
 }

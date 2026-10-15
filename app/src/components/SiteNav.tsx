@@ -4,7 +4,7 @@ import { Logo } from './Brand'
 import { GitHubIcon, REPO_URL, docsLink } from './Nav'
 import { isDemo } from '../lib/network'
 
-/* The marketing header follows the brokerage pattern (Robinhood, Public, Webull, Ondo): it describes the
+/* The marketing header follows the brokerage pattern (Public, Webull, Ondo): it describes the
    company — products, pricing, safety, learning, developers — and leaves trading tasks to the app, which
    is one button away. */
 

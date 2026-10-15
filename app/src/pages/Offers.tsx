@@ -2,7 +2,7 @@ import { Link, useSearchParams } from 'react-router'
 import { StockMark } from '../components/Brand'
 import { Skeleton } from '../components/Info'
 import { DiscountForm, SlippagePicker, UpfrontForm, useSlippage } from '../components/TradeTicket'
-import { company, term, ticker } from '../lib/assets'
+import { FLAGSHIP, company, term, ticker } from '../lib/assets'
 import { date, pct, usd } from '../lib/format'
 import { useProtocol, type Asset, type Market } from '../lib/protocol'
 
@@ -46,8 +46,10 @@ function Offers({ mode }: { mode: Mode }) {
   const [slip, setSlip] = useSlippage()
   const c = COPY[mode]
 
-  const assets = data?.assets ?? []
-  const asset = assets.find((a) => a.symbol === params.get('s')) ?? assets.find((a) => a.symbol === 'SCHDc') ?? assets[0]
+  // only stocks that pay a dividend can be split; the rest are named under the grid
+  const assets = (data?.assets ?? []).filter((a) => a.markets.some((m) => m.live))
+  const others = (data?.assets ?? []).filter((a) => !assets.includes(a))
+  const asset = assets.find((a) => a.symbol === params.get('s')) ?? assets.find((a) => a.symbol === FLAGSHIP) ?? assets[0]
   const live = asset?.markets.filter((m) => m.live) ?? []
   const market = live.find((m) => m.label === params.get('m')) ?? live.find((m) => m.label === '1Y') ?? live[live.length - 1]
   const choose = (s: string, m = market?.label) => setParams(m ? { s, m } : { s }, { replace: true })
@@ -68,10 +70,17 @@ function Offers({ mode }: { mode: Mode }) {
         </div>
       ) : (
         <div className="workspace">
+          <div className="offers-col">
           <div className="offers" role="radiogroup" aria-label="Stock">
             {assets.map((a) => (
               <OfferCard key={a.token} asset={a} label={market?.label} mode={mode} on={a.token === asset?.token} onPick={() => choose(a.symbol)} />
             ))}
+          </div>
+          {others.length > 0 && (
+            <p className="hint others-note">
+              {others.map((a) => company(a.symbol)).join(', ').replace(/, ([^,]*)$/, ' and $1')} don't pay dividends, so there's nothing to split.
+            </p>
+          )}
           </div>
           <section className="card explain">
             <h3>{c.explainTitle}</h3>

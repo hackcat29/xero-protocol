@@ -15,11 +15,11 @@ interface IAggregatorV3 {
 /// @title XeroOracle
 /// @notice USD prices for Stock Tokens with stale-data rejection.
 ///
-/// On Robinhood Chain each asset reads its Chainlink tokenized-equity feed, which reports the token's
+/// On Base each asset reads its Chainlink tokenized-equity feed, which reports the token's
 /// total-return value (equity price x uiMultiplier, 8 decimals). Equity feeds run 24/5 and hold their
 /// last value over weekends and during corporate actions, so staleness is configured per asset.
-/// An optional L2 sequencer-uptime feed is honoured where Chainlink provides one (Robinhood Chain has
-/// none today). Assets without a feed (testnets) can use reporter-pushed prices.
+/// An optional L2 sequencer-uptime feed is honoured where Chainlink provides one (Base mainnet
+/// has one). Assets without a feed (testnets) can use reporter-pushed prices.
 ///
 /// Prices are informational for Xero: they drive the curve lens and frontend valuations. No vault or
 /// market settlement depends on them.

@@ -55,7 +55,7 @@ export function StockMark({ symbol, size = 40 }: { symbol: string; size?: number
   const t = ticker(symbol)
   const tone = TONES[[...t].reduce((a, c) => a + c.charCodeAt(0), 0) % TONES.length]
   return (
-    <span className="stock-mark" style={{ width: size, height: size, background: tone, fontSize: size * (t.length > 3 ? 0.27 : 0.32), borderRadius: size * 0.28 }} aria-hidden="true">
+    <span className="stock-mark" style={{ width: size, height: size, background: tone, fontSize: size * (t.length > 4 ? 0.22 : t.length > 3 ? 0.27 : 0.32), borderRadius: size * 0.28 }} aria-hidden="true">
       {t}
     </span>
   )

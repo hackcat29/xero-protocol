@@ -8,7 +8,7 @@ import { DOCS_URL, GitHubIcon, NetworkSwitch, REPO_URL } from './Nav'
 import { SearchButton } from './Search'
 import { chain, isDemo } from '../lib/network'
 
-/* The app follows the layout of brokerage web apps (Robinhood, Public, Coinbase): a sidebar for where you
+/* The app follows the layout of brokerage web apps (Public, Coinbase, Schwab): a sidebar for where you
    are, a top bar for search and your account, and a tab bar on phones. */
 
 const NAV: { group?: string; items: { to: string; label: string; icon: ReactNode; end?: boolean }[] }[] = [
@@ -65,7 +65,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="faucet-card">
               <GiftIcon size={22} />
               <b>Free test stock</b>
-              <p>Claim test versions of six stocks and ETFs to try Xero.</p>
+              <p>Claim test versions of the stocks on Base to try Xero.</p>
               <TestTokensButton label="Get test tokens" className="btn btn-sm btn-gold btn-block" />
             </div>
           )}

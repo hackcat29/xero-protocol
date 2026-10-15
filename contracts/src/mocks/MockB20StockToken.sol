@@ -3,14 +3,14 @@ pragma solidity ^0.8.24;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {IRobinhoodStockToken} from "../interfaces/IScaledUIAmount.sol";
+import {IStockToken} from "../interfaces/IScaledUIAmount.sol";
 
 /// @title MockB20StockToken
 /// @notice Implements Coinbase B20 Tokenized Stock standard on Base.
 ///         Dividends are wrapped directly into an escalating on-chain Multiplier.
 ///         Raw token balances stay constant while `uiMultiplier()` expands upon dividend reinvestment.
 ///         Underlying stock shares = rawBalance * uiMultiplier / 1e18.
-contract MockB20StockToken is ERC20, IRobinhoodStockToken {
+contract MockB20StockToken is ERC20, IStockToken {
     string public constant TOKEN_STANDARD = "Coinbase-B20";
     address public immutable issuer;
     uint256 internal _multiplier = 1e18;

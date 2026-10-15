@@ -885,3 +885,5 @@ kbd { font-family: var(--sans); font-size: 11.5px; font-weight: 600; padding: 2p
 @media (max-width: 560px) { .asset-side { width: 100%; justify-content: space-between; flex-direction: row-reverse; } }
 .banner-ready { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--brand-soft); color: var(--text); }
 .banner-ready .btn { margin-left: auto; }
+.workspace > .offers-col { grid-area: offers; min-width: 0; }
+.others-note { margin-top: 12px; }

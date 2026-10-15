@@ -8,7 +8,7 @@ export type ActivityEntry = { hash: string; title: string; time: number; chainId
 type Prefs = { theme: Theme; watchlist: string[]; slippageBps: number; activity: ActivityEntry[] }
 
 const KEY = 'xero.prefs.v1'
-const DEFAULTS: Prefs = { theme: 'system', watchlist: ['SCHDc', 'SPYc'], slippageBps: 50, activity: [] }
+const DEFAULTS: Prefs = { theme: 'system', watchlist: ['MSFTc', 'AAPLc'], slippageBps: 50, activity: [] }
 
 function load(): Prefs {
   try {

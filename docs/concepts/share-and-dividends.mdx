@@ -3,7 +3,7 @@ title: "One share, two parts"
 description: "How Xero splits a tokenized share into a share token and a dividend token."
 ---
 
-Xero keeps one **vault** per stock and maturity date, for example "SCHD, October 15, 2027". When you deposit tokenized shares, the vault issues two tokens in equal amounts:
+Xero keeps one **vault** per stock and maturity date, for example "Microsoft, October 15, 2027". When you deposit tokenized shares, the vault issues two tokens in equal amounts:
 
 <CardGroup cols={2}>
   <Card title="Share token" icon="certificate">
@@ -18,7 +18,7 @@ One share token plus one dividend token is always worth exactly one share. Hold 
 
 ## Units
 
-Both tokens are counted in **units**, and one unit is one share at the moment you deposit. If you deposit 100 `SCHDc` while each holds 1.0345 shares, you get about 103.45 units of each token (minus the 0.05% split fee).
+Both tokens are counted in **units**, and one unit is one share at the moment you deposit. If you deposit 100 `NVDAc` while each holds 1.0005 shares (NVIDIA's dividends so far), you get about 100.05 units of each token, minus the 0.05% split fee.
 
 ## What each token receives
 
@@ -29,7 +29,7 @@ Both tokens are counted in **units**, and one unit is one share at the moment yo
     After maturity, any further dividends stay with the share token, because it has become the share.
   </Tab>
   <Tab title="Dividend token">
-    Every time a dividend is reinvested into the tokenized stock, the vault credits each dividend-token unit with its share of the new shares, in `SCHDc`. You can claim at any time; claims never expire.
+    Every time a dividend is reinvested into the tokenized stock, the vault credits each dividend-token unit with its share of the new shares, in the tokenized stock. You can claim at any time; claims never expire.
 
     Xero keeps 3% of what dividend tokens collect as its protocol fee.
   </Tab>

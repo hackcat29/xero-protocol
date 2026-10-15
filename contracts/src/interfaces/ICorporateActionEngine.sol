@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 interface ICorporateActionEngine {
-    /// @dev Mirrors the `type` field of Robinhood's /rhj/corporate-actions API.
+    /// @dev Covers the corporate-action types stock-token issuers publish (dividends, splits, mergers, ...).
     enum ActionType {
         CASH_DIVIDEND,
         STOCK_DIVIDEND,

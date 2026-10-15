@@ -28,7 +28,8 @@ interface IERC20Like {
 }
 
 /// @notice Deployment script for Base (Base Sepolia Testnet 84532, Base Mainnet 8453, or Local).
-///         Deploys Coinbase B20 tokenized stocks (NVDAc, AAPLc, COINc, TSLAc, SPYc, SCHDc),
+///         Deploys test versions of the ten Coinbase B20 stocks on Base (AAPLc, AMZNc, GOOGLc, METAc, MSFTc,
+///         MSTRc, NVDAc, SNDKc, SPCXc, TSLAc),
 ///         oracles, vaults, and implied dividend yield AMMs. Writes deployments directly to core app.
 contract DeployBase is Script {
     uint256 internal constant WAD = 1e18;
@@ -84,13 +85,20 @@ contract DeployBase is Script {
         engine.grantRole(engine.REPORTER_ROLE(), deployer);
         factory.setFees(5, 0, 300, 0); // 5 bps strip fee, 3% of yield
 
-        AssetDef[6] memory assets = [
-            AssetDef("Coinbase B20 Nvidia Tokenized Stock", "NVDAc", 1.002418e18, 128.50e18, 0.0012e18),
-            AssetDef("Coinbase B20 Apple Tokenized Stock", "AAPLc", 1.006520e18, 232.80e18, 0.0052e18),
-            AssetDef("Coinbase B20 Coinbase Global Stock", "COINc", 1.000000e18, 218.40e18, 0.0000e18),
-            AssetDef("Coinbase B20 Tesla Tokenized Stock", "TSLAc", 1.000000e18, 254.20e18, 0.0000e18),
-            AssetDef("Coinbase B20 S&P 500 ETF Token", "SPYc", 1.012500e18, 575.60e18, 0.0125e18),
-            AssetDef("Coinbase B20 Schwab US Dividend ETF", "SCHDc", 1.034510e18, 28.40e18, 0.0345e18)
+        // The Coinbase B20 stocks live on Base mainnet (base.org/stocks), mirrored at mainnet prices and multipliers
+        // read on 2026-10-15. Opening yields are each company's regular quarterly dividend x4 / price; markets
+        // open only where a dividend is paid, since a stock without one has nothing to split.
+        AssetDef[10] memory assets = [
+            AssetDef("Apple Inc. (test)", "AAPLc", 1.000000e18, 345.42e18, 0.0030e18),
+            AssetDef("Amazon.com Inc. (test)", "AMZNc", 1.000000e18, 250.33e18, 0),
+            AssetDef("Alphabet Inc. (test)", "GOOGLc", 1.000377118676784179e18, 342.50e18, 0.0025e18),
+            AssetDef("Meta Platforms Inc. (test)", "METAc", 1.000313792289598084e18, 725.25e18, 0.0029e18),
+            AssetDef("Microsoft Corporation (test)", "MSFTc", 1.000000e18, 530.73e18, 0.0069e18),
+            AssetDef("Strategy Inc. (test)", "MSTRc", 1.000000e18, 141.03e18, 0),
+            AssetDef("NVIDIA Corporation (test)", "NVDAc", 1.000537939576369481e18, 218.08e18, 0.0002e18),
+            AssetDef("Sandisk Corporation (test)", "SNDKc", 1.000000e18, 1342.84e18, 0),
+            AssetDef("Space Exploration Technologies Corp. (test)", "SPCXc", 1.000000e18, 148.57e18, 0),
+            AssetDef("Tesla Inc. (test)", "TSLAc", 1.000000e18, 360.64e18, 0)
         ];
 
         Tenor[4] memory tenors = [
@@ -118,6 +126,7 @@ contract DeployBase is Script {
             guardian.setAssetAllowed(address(t), true);
             oracle.configureAsset(address(t), IAggregatorV3(address(feed)), 0);
 
+            if (as_.dividendYield == 0) continue; // listed and priced, but no dividend to split
             for (uint256 k = 0; k < tenors.length; ++k) {
                 _createVaultAndMarket(address(t), as_, tenors[k]);
             }
@@ -131,7 +140,7 @@ contract DeployBase is Script {
 
     function _createVaultAndMarket(address tokenAddr, AssetDef memory as_, Tenor memory tn) internal {
         XeroVault vault = XeroVault(factory.createVault(tokenAddr, uint64(block.timestamp) + tn.secs, tn.label, 0));
-        uint256 yield_ = as_.dividendYield > 0 ? as_.dividendYield * tn.termBps / 10_000 : 0.0050e18; // default 0.5% opening for zero-yield stocks
+        uint256 yield_ = as_.dividendYield * tn.termBps / 10_000;
         int256 rate = int256(yield_ * WAD / vault.dividendIndex());
         uint256 refPrice = uint256(rate) * tn.secs / 365 days;
         int256 scalar = int256(uint256(8e36) / (uint256(rate) > 0 ? uint256(rate) : 0.001e18));

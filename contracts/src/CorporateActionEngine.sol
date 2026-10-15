@@ -8,11 +8,11 @@ import {IRiskGuardian} from "./interfaces/IRiskGuardian.sol";
 /// @title CorporateActionEngine
 /// @notice Authenticated, append-only log of corporate actions per Stock Token.
 ///
-/// Robinhood Stock Tokens express dividends *and* splits through the same `uiMultiplier()`. Xero must
+/// Tokenized stocks express dividends *and* splits through the same `uiMultiplier()`. Xero must
 /// only credit dividend growth to Yield Tokens, so structural changes (splits, stock dividends) are
 /// attested here and divided out of the multiplier by every vault. An action becomes effective once
-/// `quorum` distinct reporters attest the identical payload; reporters source it from Robinhood's public
-/// corporate-actions API (see services/keeper) and cross-check the token's pending multiplier.
+/// `quorum` distinct reporters attest the identical payload; reporters source it from the issuer's
+/// published corporate actions (see services/keeper) and cross-check the token's pending multiplier.
 ///
 /// Actions Xero cannot represent deterministically (mergers, spin-offs, redemptions, ...) halt new
 /// stripping of the token through the RiskGuardian. Existing holders can always recombine.
@@ -67,7 +67,7 @@ contract CorporateActionEngine is ICorporateActionEngine, AccessControl {
     }
 
     /// @notice Attest a corporate action. It becomes effective once `quorum` reporters attest the same payload.
-    /// @param ref Unique identifier; reporters use the Robinhood corporate-action id.
+    /// @param ref Unique identifier; reporters use the issuer's corporate-action id.
     function report(address token, ActionType kind, uint64 effectiveAt, uint128 value, uint128 value2, bytes32 ref)
         external
         onlyRole(REPORTER_ROLE)

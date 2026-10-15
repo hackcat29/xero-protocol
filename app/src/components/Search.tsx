@@ -70,7 +70,7 @@ function Palette({ close }: { close: () => void }) {
         group: 'Stocks',
         label: ticker(a.symbol),
         sub: company(a.symbol),
-        right: <span className="palette-figs"><b>{usd(a.sharePriceUsd)}</b><small className="up">up to {best.toFixed(2)}% off</small></span>,
+        right: <span className="palette-figs"><b>{usd(a.sharePriceUsd)}</b>{best > 0 ? <small className="up">up to {best.toFixed(2)}% off</small> : <small>No dividend</small>}</span>,
         icon: <StockMark symbol={a.symbol} size={32} />,
         keywords: `${ticker(a.symbol)} ${company(a.symbol)} ${a.symbol}`.toLowerCase(),
         go: go(`/markets/${a.symbol}`),

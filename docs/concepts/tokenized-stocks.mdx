@@ -1,36 +1,44 @@
 ---
 title: "Tokenized stocks"
-description: "What a tokenized stock is, and how it pays dividends on Base."
+description: "The stocks on Base, and how they pay dividends."
 ---
 
 A tokenized stock is a token that tracks a real company's shares. It moves between wallets like any other token, settles in seconds, and trades around the clock on-chain.
 
+On Base, tokenized stocks are issued by Coinbase as **B20 tokens**, Base's native token standard. Each is backed one-for-one by shares held with a regulated custodian, and priced by Chainlink tokenized-equity feeds. See [base.org/stocks](https://www.base.org/stocks).
+
 ## Dividends are reinvested, not paid out
 
-Ordinary shares pay dividends in cash. Tokenized stocks on Base don't send you anything. Instead, each token keeps a **multiplier**: the number of shares one token represents. When the company pays a dividend, the issuer uses it to buy more shares and raises the multiplier.
+Ordinary shares pay dividends in cash. B20 stocks don't send you anything. Instead, each token keeps a **multiplier**: the number of shares one token represents. When the company pays a cash dividend, it's converted into more shares and the multiplier goes up.
 
 ```text
-Before a $0.25 dividend on a $28.40 share:   1 SCHDc = 1.0345 shares
-After the dividend is reinvested:            1 SCHDc = 1.0436 shares
+Before a $0.91 dividend on a $530.73 share:   1 MSFTc = 1.0000 shares
+After the dividend is converted to shares:    1 MSFTc = 1.0017 shares
 ```
 
-Your token balance stays the same; what each token is worth goes up. This is why the app shows `1 SCHDc = 1.0345 shares` next to every order: a tokenized share that has been around a while holds a bit more than one share.
+Your token balance stays the same; what each token is worth goes up. NVIDIA's token already shows this: after its dividends since launch, `1 NVDAc = 1.0005 shares`. It's why the app shows the conversion next to every order.
 
 ## Splits use the same multiplier
 
 A 2-for-1 stock split also doubles the multiplier, even though nobody received anything of value. Xero has to tell the two apart, so that a split is never paid out as if it were a huge dividend. It does this with a separate record of corporate actions, reported by independent keepers. See [Corporate actions](/developers/corporate-actions).
 
-## The stocks on Xero today
+## The stocks on Base
 
-| Ticker | Company | Token | Pays dividends |
-| --- | --- | --- | --- |
-| SCHD | Schwab U.S. Dividend Equity ETF | `SCHDc` | Yes, about 3.5% a year |
-| SPY | SPDR S&P 500 ETF | `SPYc` | Yes, about 1.2% a year |
-| AAPL | Apple | `AAPLc` | Yes, about 0.5% a year |
-| NVDA | NVIDIA | `NVDAc` | Yes, about 0.1% a year |
-| TSLA | Tesla | `TSLAc` | No |
-| COIN | Coinbase | `COINc` | No |
+| Ticker | Company | Token | Dividend | On Xero |
+| --- | --- | --- | --- | --- |
+| MSFT | Microsoft | `MSFTc` | About 0.7% a year | Discount and upfront markets |
+| AAPL | Apple | `AAPLc` | About 0.3% a year | Discount and upfront markets |
+| META | Meta | `METAc` | About 0.3% a year | Discount and upfront markets |
+| GOOGL | Alphabet | `GOOGLc` | About 0.25% a year | Discount and upfront markets |
+| NVDA | NVIDIA | `NVDAc` | About 0.02% a year | Discount and upfront markets |
+| AMZN | Amazon | `AMZNc` | None | Listed |
+| MSTR | Strategy | `MSTRc` | None | Listed |
+| SNDK | SanDisk | `SNDKc` | None | Listed |
+| SPCX | SpaceX | `SPCXc` | None | Listed |
+| TSLA | Tesla | `TSLAc` | None | Listed |
+
+Yields are approximate: each company's most recent regular quarterly dividend times four, divided by the share price. Stocks without a dividend have nothing to split, so Xero lists them for reference and opens markets if they start paying one.
 
 <Note>
-  On Base Sepolia these are test tokens issued by Xero to simulate tokenized stocks, priced by test price feeds. Markets for stocks that pay no dividend still trade, at whatever traders expect the company to pay.
+  On Base Sepolia, Xero uses test versions of these ten tokens at mainnet prices and multipliers. They're not real shares and have no value. Contract addresses for both networks are on [Deployments](/developers/deployments).
 </Note>

@@ -10,7 +10,7 @@ description: "Network details and contract addresses."
 | Chain ID | `84532` |
 | RPC | `https://base-sepolia-rpc.publicnode.com` (the app's default) |
 | Explorer | [sepolia.basescan.org](https://sepolia.basescan.org) |
-| Deployment block | `48125882` |
+| Deployment block | `48144414` |
 
 <Warning>
   The official `https://sepolia.base.org` RPC limits `eth_getLogs` to 200 blocks, about seven minutes of Base history. Use a provider with a wider range for event queries.
@@ -20,28 +20,32 @@ description: "Network details and contract addresses."
 
 | Contract | Address |
 | --- | --- |
-| XeroRouter | [`0x899c6f569D0e434803a97E1E7b450D138Ca2Db84`](https://sepolia.basescan.org/address/0x899c6f569D0e434803a97E1E7b450D138Ca2Db84) |
-| XeroFactory | [`0x5CFD7B8c0309049c2663761275989eAcF5970d13`](https://sepolia.basescan.org/address/0x5CFD7B8c0309049c2663761275989eAcF5970d13) |
-| YieldMarketFactory | [`0x6846bB0d38f21Dff15B4113Ecfa8E2C2AeD4AD78`](https://sepolia.basescan.org/address/0x6846bB0d38f21Dff15B4113Ecfa8E2C2AeD4AD78) |
-| CurveLens | [`0x651665e9416D4edeE40394559EEd6AF3808b02eb`](https://sepolia.basescan.org/address/0x651665e9416D4edeE40394559EEd6AF3808b02eb) |
-| XeroOracle | [`0x40d03034EDDB056B2Feb6E1937c4eEdC1c09b8Ac`](https://sepolia.basescan.org/address/0x40d03034EDDB056B2Feb6E1937c4eEdC1c09b8Ac) |
-| CorporateActionEngine | [`0x97Be23dC9fE8bbCF3a2aff489F4Fa09c9b6D0510`](https://sepolia.basescan.org/address/0x97Be23dC9fE8bbCF3a2aff489F4Fa09c9b6D0510) |
-| RiskGuardian | [`0x3d491EcA91b7847e6CE3f549378EAa88DcD2739B`](https://sepolia.basescan.org/address/0x3d491EcA91b7847e6CE3f549378EAa88DcD2739B) |
-| XeroMathSol | [`0x7fA85040d72b8488762fCadDebf644f226c259bE`](https://sepolia.basescan.org/address/0x7fA85040d72b8488762fCadDebf644f226c259bE) |
-| Test USDC | [`0xC978bc986C8D5B64264229Dd362F425A1fb25D1d`](https://sepolia.basescan.org/address/0xC978bc986C8D5B64264229Dd362F425A1fb25D1d) |
+| XeroRouter | [`0x291E9c066964e43eB91fB2602dd23952804df9a4`](https://sepolia.basescan.org/address/0x291E9c066964e43eB91fB2602dd23952804df9a4) |
+| XeroFactory | [`0xDC00885B34E7836B061BA10cF0F00d3318Cc4259`](https://sepolia.basescan.org/address/0xDC00885B34E7836B061BA10cF0F00d3318Cc4259) |
+| YieldMarketFactory | [`0xf2B1ef1F1f45E2Bc2FeE0508E05d847a13CA5e5a`](https://sepolia.basescan.org/address/0xf2B1ef1F1f45E2Bc2FeE0508E05d847a13CA5e5a) |
+| CurveLens | [`0xB0880bf5BA73767FFeA60e6aa3CECee2fc6dFee9`](https://sepolia.basescan.org/address/0xB0880bf5BA73767FFeA60e6aa3CECee2fc6dFee9) |
+| XeroOracle | [`0xF92B5e566Df96EA09bdd6347B1D79E9ddF13308E`](https://sepolia.basescan.org/address/0xF92B5e566Df96EA09bdd6347B1D79E9ddF13308E) |
+| CorporateActionEngine | [`0x4aa6B04Ac4F2354bF29ae02d1509aE21b576a89a`](https://sepolia.basescan.org/address/0x4aa6B04Ac4F2354bF29ae02d1509aE21b576a89a) |
+| RiskGuardian | [`0x2EbB7B61df61653C50bF3E6A67E846E448CFBc9a`](https://sepolia.basescan.org/address/0x2EbB7B61df61653C50bF3E6A67E846E448CFBc9a) |
+| XeroMathSol | [`0x93C92374EE22B9e6be01b67c9c412e929A39FC13`](https://sepolia.basescan.org/address/0x93C92374EE22B9e6be01b67c9c412e929A39FC13) |
+| Test USDC | [`0xD8dfDaa163d78FB81BC08EDf91114737b0ADD705`](https://sepolia.basescan.org/address/0xD8dfDaa163d78FB81BC08EDf91114737b0ADD705) |
 
 ### Test stocks
 
-Each is a mock tokenized stock with a public `faucet()` and 1W, 3M, 6M and 1Y markets.
+Test versions of the ten B20 stocks on Base, at mainnet prices and multipliers, each with a public `faucet()` (once a day per address). The five that pay a dividend have 1W, 3M, 6M and 1Y markets.
 
-| Token | Address | Price feed |
-| --- | --- | --- |
-| `NVDAc` | [`0x36A51ed210A17B22fc99DC668220832CFAD91e89`](https://sepolia.basescan.org/address/0x36A51ed210A17B22fc99DC668220832CFAD91e89) | [`0x439DCBc8…1280`](https://sepolia.basescan.org/address/0x439DCBc8f8b9874c93698057a642Ac0187BB1280) |
-| `AAPLc` | [`0xe8Ea1f6DB779ED3C95A217F1e12c5Df2C11C23cD`](https://sepolia.basescan.org/address/0xe8Ea1f6DB779ED3C95A217F1e12c5Df2C11C23cD) | [`0x6bB866b8…3821`](https://sepolia.basescan.org/address/0x6bB866b8A5023b98F568A9EA0FD5FBAd6ECA3821) |
-| `COINc` | [`0x31a1e495C9E1b814B5c2ff6d4Ba032abE4C18B98`](https://sepolia.basescan.org/address/0x31a1e495C9E1b814B5c2ff6d4Ba032abE4C18B98) | [`0xD0aF9bDD…95da`](https://sepolia.basescan.org/address/0xD0aF9bDD799F6d2464393C457bBB396e93f395da) |
-| `TSLAc` | [`0xF809b376106c57565b0dd0A9383CdE550D952770`](https://sepolia.basescan.org/address/0xF809b376106c57565b0dd0A9383CdE550D952770) | [`0x7c9c7e00…17e7`](https://sepolia.basescan.org/address/0x7c9c7e008667696c9204aE236f4E3Cfd120517e7) |
-| `SPYc` | [`0x53EB0F8F278A422cC194476Af24dc062Ae1386D4`](https://sepolia.basescan.org/address/0x53EB0F8F278A422cC194476Af24dc062Ae1386D4) | [`0x66834082…02eD`](https://sepolia.basescan.org/address/0x6683408257FE6B5C534A7ABb5c0792E1B84B02eD) |
-| `SCHDc` | [`0x7907723540f90dbEdFfe7F39dA23FC022D0dd81f`](https://sepolia.basescan.org/address/0x7907723540f90dbEdFfe7F39dA23FC022D0dd81f) | [`0x74403906…1141`](https://sepolia.basescan.org/address/0x744039067b51a7B9BE699fe1ECa897F3FA982141) |
+| Token | Address | Price feed | Markets |
+| --- | --- | --- | --- |
+| `AAPLc` | [`0xafeB4Db7A17363c574330Cd7CBa83d2b6411Fd76`](https://sepolia.basescan.org/address/0xafeB4Db7A17363c574330Cd7CBa83d2b6411Fd76) | [`0xE81B5F2d…7B9C`](https://sepolia.basescan.org/address/0xE81B5F2dF7f0b0529dF3EFCB4cf3403Df6207B9C) | 4 maturities |
+| `AMZNc` | [`0x697F3c3bc15b6D56eC1ffF1b34370DC3Ed0bc418`](https://sepolia.basescan.org/address/0x697F3c3bc15b6D56eC1ffF1b34370DC3Ed0bc418) | [`0x54173d98…36b1`](https://sepolia.basescan.org/address/0x54173d98FD0f40dbE758Bf7d5db4d0E7eeCd36b1) | None (no dividend) |
+| `GOOGLc` | [`0xE8bD13749895702FBb4b3EF846De4B396c44105f`](https://sepolia.basescan.org/address/0xE8bD13749895702FBb4b3EF846De4B396c44105f) | [`0x971ca59f…0dB0`](https://sepolia.basescan.org/address/0x971ca59fBCEaA91434F308837d965774D6a30dB0) | 4 maturities |
+| `METAc` | [`0x3F6c4Bf1934d92Ffa9065393908580b0e06f171A`](https://sepolia.basescan.org/address/0x3F6c4Bf1934d92Ffa9065393908580b0e06f171A) | [`0x4b0Eb183…6045`](https://sepolia.basescan.org/address/0x4b0Eb1831b919ef7113d4a6C3fcd5dE9Fe5B6045) | 4 maturities |
+| `MSFTc` | [`0x2b1C7c5BD9735C7da77c4adB30526E66DB8F2e9a`](https://sepolia.basescan.org/address/0x2b1C7c5BD9735C7da77c4adB30526E66DB8F2e9a) | [`0x2aECf099…9eD7`](https://sepolia.basescan.org/address/0x2aECf099053EdA4596e77eb7309b86C404589eD7) | 4 maturities |
+| `MSTRc` | [`0x8dF67526FDDbF14AF38093B4e7FB8e88947Ba937`](https://sepolia.basescan.org/address/0x8dF67526FDDbF14AF38093B4e7FB8e88947Ba937) | [`0x8b9476D3…9AC1`](https://sepolia.basescan.org/address/0x8b9476D356F5278a853179f34b3c86199c1E9AC1) | None (no dividend) |
+| `NVDAc` | [`0xB05A37826e185f7fb7872FB8AAd93dc53A2C7634`](https://sepolia.basescan.org/address/0xB05A37826e185f7fb7872FB8AAd93dc53A2C7634) | [`0x200F256b…9Ef2`](https://sepolia.basescan.org/address/0x200F256bA1476d1d8C28Bef5B31b5Aa8ba979Ef2) | 4 maturities |
+| `SNDKc` | [`0xd54D16D25bE9ec633659F44f981BA99C1f2025EB`](https://sepolia.basescan.org/address/0xd54D16D25bE9ec633659F44f981BA99C1f2025EB) | [`0xffA6FF1B…4705`](https://sepolia.basescan.org/address/0xffA6FF1B19ca7475B66253A7477d42D7E5684705) | None (no dividend) |
+| `SPCXc` | [`0x0667e737aD80c3680055b854BF263f9aAf87137C`](https://sepolia.basescan.org/address/0x0667e737aD80c3680055b854BF263f9aAf87137C) | [`0x1cb6a529…17D1`](https://sepolia.basescan.org/address/0x1cb6a529e637Da323e1fcE38be4707cfa60117D1) | None (no dividend) |
+| `TSLAc` | [`0x669657440285f4CBC933ee931cd5bE7eA6Fcf589`](https://sepolia.basescan.org/address/0x669657440285f4CBC933ee931cd5bE7eA6Fcf589) | [`0x65f855AC…fF65`](https://sepolia.basescan.org/address/0x65f855AC11556b7C9a1Bed13AC481625aEB0fF65) | None (no dividend) |
 
 Vault and market addresses for each maturity come from `XeroFactory.vaultsOf(token)` and `YieldMarketFactory.poolOf(vault)`, or all at once from [`CurveLens.getCurve(token)`](/developers/reading-data). The full address book the app uses is [`app/src/deployments/84532.json`](https://github.com/hackcat29/xero-protocol/blob/main/app/src/deployments/84532.json).
 
@@ -49,4 +53,23 @@ Vault and market addresses for each maturity come from `XeroFactory.vaultsOf(tok
 
 ## Base mainnet
 
-Planned. The production deployment script (`contracts/script/DeployBaseProduction.s.sol`) and its configuration (`deploy/base-mainnet.json`) are in the repository, with governance through a Safe and a 48-hour timelock.
+Xero is not yet deployed on mainnet. These are the Coinbase B20 stocks it will list, with their Chainlink tokenized-equity feeds, as configured in `deploy/base-mainnet.json`.
+
+| Token | Company | Token address | Chainlink feed |
+| --- | --- | --- | --- |
+| `AAPLc` | Apple | [`0xb200000000000000000000C2e324d24d7eEcd1fb`](https://basescan.org/address/0xb200000000000000000000C2e324d24d7eEcd1fb) | [`0x787f13dEa48Db0897CbCDD985de77809D837F988`](https://basescan.org/address/0x787f13dEa48Db0897CbCDD985de77809D837F988) |
+| `AMZNc` | Amazon | [`0xb200000000000000000000d9192b6B456483C2E8`](https://basescan.org/address/0xb200000000000000000000d9192b6B456483C2E8) | [`0x06A8E4b3aBB3B7543d8396FB2B763d22820cB295`](https://basescan.org/address/0x06A8E4b3aBB3B7543d8396FB2B763d22820cB295) |
+| `GOOGLc` | Alphabet | [`0xb2000000000000000000002D0BA3164cc74f58B7`](https://basescan.org/address/0xb2000000000000000000002D0BA3164cc74f58B7) | [`0x5bF49E0ffA937CE2FfF033c739aD7C634c4D34F2`](https://basescan.org/address/0x5bF49E0ffA937CE2FfF033c739aD7C634c4D34F2) |
+| `METAc` | Meta | [`0xb2000000000000000000008bC8786B856E61707C`](https://basescan.org/address/0xb2000000000000000000008bC8786B856E61707C) | [`0x6526aE6797A76123638b863AeE4dD27Ba4E4b27D`](https://basescan.org/address/0x6526aE6797A76123638b863AeE4dD27Ba4E4b27D) |
+| `MSFTc` | Microsoft | [`0xB200000000000000000000Ab99cFa739E253872B`](https://basescan.org/address/0xB200000000000000000000Ab99cFa739E253872B) | [`0xeB10A6c9aa7E537aEd766C08c35Dae35B321b18c`](https://basescan.org/address/0xeB10A6c9aa7E537aEd766C08c35Dae35B321b18c) |
+| `MSTRc` | Strategy | [`0xb2000000000000000000004884b426556b92883d`](https://basescan.org/address/0xb2000000000000000000004884b426556b92883d) | [`0xB3cE282CD188b35DA0E38D8Bc7d58e33173D202a`](https://basescan.org/address/0xB3cE282CD188b35DA0E38D8Bc7d58e33173D202a) |
+| `NVDAc` | NVIDIA | [`0xb20000000000000000000078ee7ce2fE4908108C`](https://basescan.org/address/0xb20000000000000000000078ee7ce2fE4908108C) | [`0x04689a41629776563E6822F76f2e57D148d28513`](https://basescan.org/address/0x04689a41629776563E6822F76f2e57D148d28513) |
+| `SNDKc` | SanDisk | [`0xb200000000000000000000397293Cb8cda9a10c5`](https://basescan.org/address/0xb200000000000000000000397293Cb8cda9a10c5) | [`0x388b0dC46C0Fb05A74BeE0994fa5b02c6Fcca2eA`](https://basescan.org/address/0x388b0dC46C0Fb05A74BeE0994fa5b02c6Fcca2eA) |
+| `SPCXc` | SpaceX | [`0xb2000000000000000000007b9fcbd005511aCBd5`](https://basescan.org/address/0xb2000000000000000000007b9fcbd005511aCBd5) | [`0x6A634B235903C4ad6376892180d6fF8612e3Fa68`](https://basescan.org/address/0x6A634B235903C4ad6376892180d6fF8612e3Fa68) |
+| `TSLAc` | Tesla | [`0xb2000000000000000000001e800a7f5189430cD0`](https://basescan.org/address/0xb2000000000000000000001e800a7f5189430cD0) | [`0xFaf869185383a24F8cb00e27BdA6b63B9905DCb4`](https://basescan.org/address/0xFaf869185383a24F8cb00e27BdA6b63B9905DCb4) |
+
+<Warning>
+  B20 stocks use **8 decimals**; Xero's vault and market currently assume 18-decimal tokens. Supporting 8-decimal tokens is required before a mainnet deployment.
+</Warning>
+
+The production deployment script (`contracts/script/DeployBaseProduction.s.sol`) and its configuration are in the repository, with governance through a Safe and a 48-hour timelock.

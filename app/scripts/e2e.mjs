@@ -4,7 +4,7 @@
 //   E2E_ACCOUNT=xero-testnet node scripts/e2e.mjs [baseUrl] Base Sepolia (set E2E_CHAIN and
 //                                                           E2E_RPC=https://sepolia-rollup.arbitrum.io/rpc for Arbitrum): injects an EIP-1193 wallet that signs in this
 //                                                           process with that Foundry keystore account (or E2E_KEY),
-//                                                           claims test SCHD from the faucet if short, then runs the flows
+//                                                           claims test MSFT from the faucet if short, then runs the flows
 import puppeteer from 'puppeteer-core'
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
@@ -61,7 +61,7 @@ const tab = (name) => clickText('.ticket-tabs [role="tab"]', name)
 
 // E2E_CHAIN picks the app's network (a ?chain= id or slug, remembered by the app) and E2E_RPC must match it
 const chainParam = process.env.E2E_CHAIN ? `&chain=${process.env.E2E_CHAIN}` : ''
-await page.goto(`${BASE}/markets/SCHDc?m=1Y${chainParam}`, { waitUntil: 'domcontentloaded' })
+await page.goto(`${BASE}/markets/MSFTc?m=1Y${chainParam}`, { waitUntil: 'domcontentloaded' })
 await page.waitForSelector('.ticket .amount')
 
 // connect through the RainbowKit modal: Alice on the devnet, the injected test wallet on testnet
@@ -70,15 +70,15 @@ await clickText('button', wallet ? 'Xero E2E' : 'Alice · devnet')
 await page.waitForSelector('.btn-account', { timeout: 15000 })
 console.log(`ok   connected as ${wallet ? wallet.address : 'Alice'}`)
 
-// testnet wallets start empty: claim test SCHD from the Test tokens dialog
-if (wallet && (await wallet.schdBalance()) < 150n * 10n ** 18n) {
+// testnet wallets start empty: claim test MSFT from the Test tokens dialog
+if (wallet && (await wallet.stockBalance()) < 15n * 10n ** 18n) {
   await clickText('button', 'Get test tokens')
-  await page.waitForFunction(() => [...document.querySelectorAll('.console-stocks button')].some((b) => b.textContent.includes('SCHD') && /Claim|Next claim/.test(b.textContent) && !b.textContent.includes('Checking')))
-  const cooling = await page.$$eval('.console-stocks button', (bs) => bs.find((b) => b.textContent.includes('SCHD'))?.textContent.includes('Next claim'))
-  if (cooling) console.log('skip test SCHD claim (claimed in the last day)')
+  await page.waitForFunction(() => [...document.querySelectorAll('.console-stocks button')].some((b) => b.textContent.includes('MSFT') && /Claim|Next claim/.test(b.textContent) && !b.textContent.includes('Checking')))
+  const cooling = await page.$$eval('.console-stocks button', (bs) => bs.find((b) => b.textContent.includes('MSFT'))?.textContent.includes('Next claim'))
+  if (cooling) console.log('skip test MSFT claim (claimed in the last day)')
   else {
-    await clickText('.console-stocks button', 'SCHD')
-    await expectToast('Claim test SCHD')
+    await clickText('.console-stocks button', 'MSFT')
+    await expectToast('Claim test MSFT')
   }
   await page.keyboard.press('Escape')
 }
@@ -102,34 +102,34 @@ async function confirmReview(button, toastTitle) {
 await tab('Discount')
 await typeInto(0, '2')
 await primary('Review order')
-await confirmReview('Confirm purchase', 'Buy SCHD at a discount')
+await confirmReview('Confirm purchase', 'Buy MSFT at a discount')
 
 // 2. take dividends upfront (router.stripAndSellYield)
 await tab('Upfront')
 await typeInto(0, '3')
 await primary('Review order')
-await confirmReview('Confirm and get paid', 'Get SCHD dividends upfront')
+await confirmReview('Confirm and get paid', 'Get MSFT dividends upfront')
 
 // 3. buy dividend tokens, then sell some back
 await tab('Dividends')
 await typeInto(0, '2')
 await primary('Buy dividends')
-await expectToast('Buy SCHD dividend token')
+await expectToast('Buy MSFT dividend token')
 await clickText('.ticket .seg button', 'Sell dividends')
 await typeInto(0, '5')
 await primary('Sell dividends')
-await expectToast('Sell SCHD dividend token')
+await expectToast('Sell MSFT dividend token')
 
 // 4. split shares, then rejoin part of them
 await tab('More')
 await clickText('.ticket .seg button', 'Split shares')
 await typeInto(0, '3')
 await primary('Split')
-await expectToast('Split SCHD')
+await expectToast('Split MSFT')
 await tab('Redeem')
 await typeInto(0, '1')
 await primary('Rejoin into shares')
-await expectToast('Rejoin SCHD')
+await expectToast('Rejoin MSFT')
 
 // 5. add liquidity
 await tab('More')
@@ -145,7 +145,7 @@ await page.waitForFunction(() => new URL(location.href).searchParams.get('m') ==
 await new Promise((r) => setTimeout(r, 800)) // the ticket remounts for the new maturity
 await typeInto(0, '1')
 await primary('Review order')
-await confirmReview('Confirm purchase', 'Buy SCHD at a discount')
+await confirmReview('Confirm purchase', 'Buy MSFT at a discount')
 
 // 7. the transactions show up in Activity
 await clickText('.side-nav a', 'Activity')
@@ -251,8 +251,8 @@ async function injectedWallet(page) {
   const { default: book } = await import(`../src/deployments/${chainId}.json`, { with: { type: 'json' } })
   const symbolAbi = [{ type: 'function', name: 'symbol', stateMutability: 'view', inputs: [], outputs: [{ type: 'string' }] }]
   const symbols = await Promise.all(book.stocks.map((t) => pub.readContract({ address: t, abi: symbolAbi, functionName: 'symbol' })))
-  const schd = book.stocks[symbols.findIndex((x) => x === 'SCHDc' || x === 'SCHD')]
-  const schdBalance = () => pub.readContract({ address: schd, abi: [{ type: 'function', name: 'balanceOf', stateMutability: 'view', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }] }], functionName: 'balanceOf', args: [account.address] })
+  const msft = book.stocks[symbols.findIndex((x) => x === 'MSFTc' || x === 'MSFT')]
+  const stockBalance = () => pub.readContract({ address: msft, abi: [{ type: 'function', name: 'balanceOf', stateMutability: 'view', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }] }], functionName: 'balanceOf', args: [account.address] })
   console.log(`     wallet ${account.address} on chain ${chainId}, ${Number(await pub.getBalance({ address: account.address })) / 1e18} ETH`)
-  return { address: account.address, schdBalance }
+  return { address: account.address, stockBalance }
 }

@@ -7,8 +7,8 @@ description: "Xero's terms, in plain language and in contract terms."
 | --- | --- | --- |
 | **Tokenized stock** | A token tracking a company's shares, with dividends reinvested | The underlying, an ERC-8056 token with `uiMultiplier()` |
 | **Multiplier** | How many shares one token represents | `uiMultiplier()`, `M` |
-| **Share token** | Becomes the share at maturity | Principal token, `PT`, e.g. `xSCHDc-PT-1Y` |
-| **Dividend token** | Collects the dividends until maturity | Yield token, `YT`, e.g. `xSCHDc-YT-1Y` |
+| **Share token** | Becomes the share at maturity | Principal token, `PT`, e.g. `xMSFTc-PT-1Y` |
+| **Dividend token** | Collects the dividends until maturity | Yield token, `YT`, e.g. `xMSFTc-YT-1Y` |
 | **Unit** | One share token plus one dividend token, worth one share at deposit | `units = raw × I` |
 | **Split / strip** | Turn tokenized shares into share and dividend tokens | `XeroVault.strip` |
 | **Rejoin / recombine** | Turn a share token and a dividend token back into the stock | `XeroVault.recombine` |

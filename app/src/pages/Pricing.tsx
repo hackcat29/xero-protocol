@@ -2,6 +2,7 @@ import { Link } from 'react-router'
 import { Guilloche } from '../components/Brand'
 import { docsLink } from '../components/Nav'
 import { usd } from '../lib/format'
+import { FLAGSHIP, ticker } from '../lib/assets'
 import { useProtocol } from '../lib/protocol'
 
 const SPLIT = 0.0005
@@ -10,8 +11,9 @@ const DIVIDEND = 0.03
 
 export function PricingPage() {
   const { data } = useProtocol()
-  const schd = data?.markets.find((m) => m.live && m.symbol === 'SCHDc' && m.label === '1Y')
-  const d = schd ? schd.ptDiscountPct / 100 : 0.0355
+  const ex = data?.markets.find((m) => m.live && m.symbol === FLAGSHIP && m.label === '1Y')
+  const d = ex ? ex.ptDiscountPct / 100 : 0.007
+  const name = ticker(FLAGSHIP)
   const order = 10_000
 
   // Buying at a discount splits about order / (1 − d) of shares and sells the dividend part of them;
@@ -44,7 +46,7 @@ export function PricingPage() {
         <div className="section-h">
           <span className="eyebrow">In practice</span>
           <h2>What a typical order costs</h2>
-          <p>Estimates at today's 1-year SCHD price, with a {(d * 100).toFixed(2)}% discount. The app shows the exact amount before you confirm.</p>
+          <p>Estimates at today's 1-year {name} price, with a {(d * 100).toFixed(2)}% discount. The app shows the exact amount before you confirm.</p>
         </div>
         <div className="card">
           <div className="table-wrap">
@@ -53,9 +55,9 @@ export function PricingPage() {
                 <tr><th>Order</th><th className="r">Xero fees</th><th className="r">Share of order</th></tr>
               </thead>
               <tbody>
-                <Row order={`Buy ${usd(order, 0)} of SCHD at a discount`} fee={discountFees} base={order} />
-                <Row order={`Take dividends upfront on ${usd(order, 0)} of SCHD`} fee={upfrontFees} base={order} />
-                <Row order={`Buy ${usd(1_000, 0)} of SCHD dividend tokens`} fee={dividendFees} base={1_000} note={`plus ${DIVIDEND * 100}% of the dividends they collect`} />
+                <Row order={`Buy ${usd(order, 0)} of ${name} at a discount`} fee={discountFees} base={order} />
+                <Row order={`Take dividends upfront on ${usd(order, 0)} of ${name}`} fee={upfrontFees} base={order} />
+                <Row order={`Buy ${usd(1_000, 0)} of ${name} dividend tokens`} fee={dividendFees} base={1_000} note={`plus ${DIVIDEND * 100}% of the dividends they collect`} />
                 <tr><td><b>Redeem your shares at maturity</b></td><td className="r"><b>$0.00</b></td><td className="r">0%</td></tr>
               </tbody>
             </table>

@@ -8,7 +8,7 @@ import {RiskGuardian} from "../../src/RiskGuardian.sol";
 import {CorporateActionEngine} from "../../src/CorporateActionEngine.sol";
 import {ICorporateActionEngine} from "../../src/interfaces/ICorporateActionEngine.sol";
 import {IRiskGuardian} from "../../src/interfaces/IRiskGuardian.sol";
-import {IRobinhoodStockToken} from "../../src/interfaces/IScaledUIAmount.sol";
+import {IStockToken} from "../../src/interfaces/IScaledUIAmount.sol";
 import {XeroFactory} from "../../src/XeroFactory.sol";
 import {XeroVault} from "../../src/XeroVault.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -53,19 +53,19 @@ contract RobinhoodForkTest is Test {
         if (!enabled) return;
         address[3] memory tokens = [AAPL, SCHD, CRWD];
         for (uint256 i; i < 3; ++i) {
-            IRobinhoodStockToken t = IRobinhoodStockToken(tokens[i]);
+            IStockToken t = IStockToken(tokens[i]);
             assertGe(t.uiMultiplier(), 1e17);
             assertEq(t.balanceOfUI(address(0xdead)), t.balanceOf(address(0xdead)) * t.uiMultiplier() / 1e18);
             t.oraclePaused();
         }
-        assertEq(IRobinhoodStockToken(CRWD).uiMultiplier(), 4e18, "CRWD 4:1 split lives in the multiplier");
+        assertEq(IStockToken(CRWD).uiMultiplier(), 4e18, "CRWD 4:1 split lives in the multiplier");
     }
 
     function test_Fork_StripAndRecombineRealAapl() public {
         if (!enabled) return;
         vm.prank(admin);
         XeroVault vault = XeroVault(factory.createVault(AAPL, uint64(block.timestamp + 180 days), "6M", 0));
-        assertEq(vault.dividendIndex(), IRobinhoodStockToken(AAPL).uiMultiplier());
+        assertEq(vault.dividendIndex(), IStockToken(AAPL).uiMultiplier());
 
         deal(AAPL, alice, 10 ether);
         vm.startPrank(alice);
@@ -89,7 +89,7 @@ contract RobinhoodForkTest is Test {
         vm.stopPrank();
 
         // Simulate the next quarterly reinvestment (~0.9%) on the real contract's multiplier.
-        uint256 m = IRobinhoodStockToken(SCHD).uiMultiplier();
+        uint256 m = IStockToken(SCHD).uiMultiplier();
         vm.mockCall(SCHD, abi.encodeWithSignature("uiMultiplier()"), abi.encode(m * 1009 / 1000));
         uint256 y = vault.claimYield(alice);
         vm.prank(alice);
@@ -108,7 +108,7 @@ contract RobinhoodForkTest is Test {
         vault.strip(1 ether, alice);
         vm.stopPrank();
 
-        uint256 m = IRobinhoodStockToken(CRWD).uiMultiplier();
+        uint256 m = IStockToken(CRWD).uiMultiplier();
         vm.mockCall(CRWD, abi.encodeWithSignature("uiMultiplier()"), abi.encode(m * 2));
         vault.sync();
         assertTrue(vault.frozen(), "unattested 2:1 split freezes the vault");

@@ -3,12 +3,12 @@ pragma solidity ^0.8.24;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {IRobinhoodStockToken} from "../interfaces/IScaledUIAmount.sol";
+import {IStockToken} from "../interfaces/IScaledUIAmount.sol";
 
-/// @notice Local/testnet stand-in for a Robinhood Stock Token (ERC-8056 Scaled UI Amount).
+/// @notice Local/testnet stand-in for a tokenized stock (ERC-8056 Scaled UI Amount).
 ///         Raw balances never change; corporate actions move `uiMultiplier`, immediately or on a schedule,
 ///         mirroring the mainnet contract's observable interface. Not for production.
-contract MockStockToken is ERC20, IRobinhoodStockToken {
+contract MockStockToken is ERC20, IStockToken {
     address public immutable issuer;
     uint256 internal _multiplier = 1e18;
     uint256 public newUIMultiplier = 1e18;

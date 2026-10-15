@@ -17,7 +17,8 @@ const pages = [
   { path: '/activity', wait: '.empty-state', name: 'activity', height: 900 },
   { path: '/discount', wait: '.ticket .amount', name: 'discount', height: 1600 },
   { path: '/upfront', wait: '.ticket .amount', name: 'upfront', height: 1600 },
-  { path: '/markets/SCHDc?m=1Y', wait: '.ticket .amount', name: 'asset', height: 1900 },
+  { path: '/markets/MSFTc?m=1Y', wait: '.ticket .amount', name: 'asset', height: 1900 },
+  { path: '/markets/TSLAc', wait: '.empty-state h3', name: 'no-dividend', height: 900 },
   { path: '/portfolio', wait: '.empty-state, .kpis', name: 'portfolio', height: 900 },
 ]
 

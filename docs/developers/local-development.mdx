@@ -31,7 +31,7 @@ forge test          # unit, fuzz, invariant and parity tests
       --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
       --sender 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
     ```
-    This deploys six mock stocks with four maturities each, seeds every market, and writes the address book to `app/src/deployments/31337.json`. The key is Anvil's public first account, which becomes the test issuer.
+    This deploys mock versions of the ten B20 stocks on Base, opens and seeds four maturities for each of the five that pay dividends, and writes the address book to `app/src/deployments/31337.json`. The key is Anvil's public first account, which becomes the test issuer.
   </Step>
   <Step title="Run the app">
     ```bash

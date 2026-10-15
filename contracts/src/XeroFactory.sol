@@ -8,7 +8,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 
 import {XeroVault, IXeroFactoryConfig} from "./XeroVault.sol";
 import {XeroComponentToken, ComponentTokenDeployer} from "./tokens/XeroComponentToken.sol";
-import {IRobinhoodStockToken} from "./interfaces/IScaledUIAmount.sol";
+import {IStockToken} from "./interfaces/IScaledUIAmount.sol";
 import {ICorporateActionEngine} from "./interfaces/ICorporateActionEngine.sol";
 import {IRiskGuardian} from "./interfaces/IRiskGuardian.sol";
 
@@ -91,7 +91,7 @@ contract XeroFactory is IXeroFactoryConfig, Ownable2Step {
         if (msg.sender != owner() && fee > 0) usdg.safeTransferFrom(msg.sender, treasury, fee);
 
         XeroVault v = new XeroVault(
-            IRobinhoodStockToken(underlying), engine, guardian, maturity, maxGrowthPerSync, this
+            IStockToken(underlying), engine, guardian, maturity, maxGrowthPerSync, this
         );
         vault = address(v);
 

@@ -7,16 +7,16 @@ Buying at a discount gets you a stock for less than its market price, in exchang
 
 ## Example
 
-SCHD trades at $28.40. Its 1-year share token costs $27.39.
+Microsoft trades at $530.73. Its 1-year share token costs $526.96.
 
 | | |
 | --- | --- |
-| You pay today | $27.39 per share |
-| You receive on Oct 15, 2027 | 1 SCHD share per token |
-| Discount | 3.55% |
-| Return if the price is unchanged | about 3.68% a year |
+| You pay today | $526.96 per share |
+| You receive on Oct 15, 2027 | 1 MSFT share per token |
+| Discount | 0.71% |
+| Return if the price is unchanged | about 0.72% a year |
 
-If SCHD rises 10% by then, your share is worth 10% more, the same as if you'd bought it today, and you still keep the discount.
+If Microsoft rises 10% by then, your share is worth 10% more, the same as if you'd bought it today, and you still keep the discount.
 
 ## How to buy
 
@@ -25,7 +25,7 @@ If SCHD rises 10% by then, your share is worth 10% more, the same as if you'd bo
     Open **Buy at a discount**. Each card shows today's price, your price and the discount for the selected maturity. Longer maturities give bigger discounts.
   </Step>
   <Step title="Enter the amount">
-    You pay in the tokenized stock itself (for example `SCHDc`). The ticket shows how many shares you'll receive at maturity and what they're worth at today's price.
+    You pay in the tokenized stock itself (for example `MSFTc`). The ticket shows how many shares you'll receive at maturity and what they're worth at today's price.
   </Step>
   <Step title="Confirm">
     Select **Review order** to see exactly what you pay, what you receive and when, then **Confirm purchase**. The first time, your wallet also asks you to approve the token. The order is cancelled automatically if the price moves more than your **Price protection** setting.
@@ -55,7 +55,10 @@ The result is about `amount ÷ (1 − discount)` worth of shares at maturity. Se
   <Accordion title="Selling before maturity">
     There's no market for share tokens on their own yet, so plan to hold until maturity. If you also hold the matching dividend tokens, you can rejoin the two into the stock at any time.
   </Accordion>
-  <Accordion title="Why is the discount on Tesla or Coinbase not zero?">
-    Neither pays a dividend. Their discount reflects what traders on Xero are pricing in, which on the test network starts at a small default. On mainnet it would trade toward zero.
+  <Accordion title="Why can't I buy Tesla at a discount?">
+    Tesla, Amazon, Strategy, SanDisk and SpaceX don't pay dividends, so there's nothing to split off and no discount. Their markets open if they start paying one.
+  </Accordion>
+  <Accordion title="Why are the discounts small?">
+    The discount equals the dividends you skip. Most stocks on Base are growth companies with low dividend yields (Microsoft pays about 0.7% a year), so their discounts are small. Discounts grow with longer maturities and higher-yielding stocks.
   </Accordion>
 </AccordionGroup>

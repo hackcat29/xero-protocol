@@ -51,10 +51,10 @@ import { baseSepolia } from 'viem/chains'
 
 const client = createPublicClient({ chain: baseSepolia, transport: http('https://base-sepolia-rpc.publicnode.com') })
 
-const LENS = '0x651665e9416D4edeE40394559EEd6AF3808b02eb'
-const SCHD = '0x7907723540f90dbEdFfe7F39dA23FC022D0dd81f'
+const LENS = '0xB0880bf5BA73767FFeA60e6aa3CECee2fc6dFee9'
+const MSFT = '0x2b1C7c5BD9735C7da77c4adB30526E66DB8F2e9a' // test MSFTc
 
-const curve = await client.readContract({ address: LENS, abi: curveLensAbi, functionName: 'getCurve', args: [SCHD] })
+const curve = await client.readContract({ address: LENS, abi: curveLensAbi, functionName: 'getCurve', args: [MSFT] })
 
 for (const p of curve.points.filter((p) => !p.matured)) {
   const pt = Number(formatUnits(p.ptPriceUsd, 18))

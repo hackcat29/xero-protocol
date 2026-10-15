@@ -1,15 +1,25 @@
-/** Human names for the tokenized stocks. On-chain names are long issuer strings; people know tickers and companies. */
-const INFO: Record<string, { ticker: string; name: string; kind: 'stock' | 'etf'; paysDividend: boolean }> = {
-  NVDAc: { ticker: 'NVDA', name: 'NVIDIA', kind: 'stock', paysDividend: true },
-  AAPLc: { ticker: 'AAPL', name: 'Apple', kind: 'stock', paysDividend: true },
-  COINc: { ticker: 'COIN', name: 'Coinbase', kind: 'stock', paysDividend: false },
-  TSLAc: { ticker: 'TSLA', name: 'Tesla', kind: 'stock', paysDividend: false },
-  SPYc: { ticker: 'SPY', name: 'SPDR S&P 500 ETF', kind: 'etf', paysDividend: true },
-  SCHDc: { ticker: 'SCHD', name: 'Schwab U.S. Dividend Equity ETF', kind: 'etf', paysDividend: true },
+/** The Coinbase B20 stocks on Base (base.org/stocks), by token symbol. On-chain names are legal entity names;
+ *  people know tickers and short company names. */
+const INFO: Record<string, { ticker: string; name: string }> = {
+  AAPLc: { ticker: 'AAPL', name: 'Apple' },
+  AMZNc: { ticker: 'AMZN', name: 'Amazon' },
+  GOOGLc: { ticker: 'GOOGL', name: 'Alphabet' },
+  METAc: { ticker: 'META', name: 'Meta' },
+  MSFTc: { ticker: 'MSFT', name: 'Microsoft' },
+  MSTRc: { ticker: 'MSTR', name: 'Strategy' },
+  NVDAc: { ticker: 'NVDA', name: 'NVIDIA' },
+  SNDKc: { ticker: 'SNDK', name: 'SanDisk' },
+  SPCXc: { ticker: 'SPCX', name: 'SpaceX' },
+  TSLAc: { ticker: 'TSLA', name: 'Tesla' },
 }
 
+/** The example used across the site: the largest dividend payer among the Base stocks. */
+export const FLAGSHIP = 'MSFTc'
+/** Stocks shown first in the hero and suggested for new watchlists: the dividend payers. */
+export const FEATURED = ['MSFTc', 'AAPLc', 'METAc', 'GOOGLc']
+
 export function stockInfo(symbol: string) {
-  return INFO[symbol] ?? { ticker: symbol.replace(/c$/, ''), name: symbol, kind: 'stock' as const, paysDividend: true }
+  return INFO[symbol] ?? { ticker: symbol.replace(/c$/, ''), name: symbol }
 }
 
 export const ticker = (symbol: string) => stockInfo(symbol).ticker

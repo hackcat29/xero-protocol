@@ -196,7 +196,7 @@ function Watchlist() {
                   <StockMark symbol={a.symbol} size={34} />
                   <div><b>{ticker(a.symbol)}</b><small>{company(a.symbol)}</small></div>
                 </Link>
-                <div className="watch-figs"><b>{usd(a.sharePriceUsd)}</b><small className="up">up to {best.toFixed(2)}% off</small></div>
+                <div className="watch-figs"><b>{usd(a.sharePriceUsd)}</b>{best > 0 ? <small className="up">up to {best.toFixed(2)}% off</small> : <small className="muted">No dividend</small>}</div>
                 <WatchButton symbol={a.symbol} size={16} />
               </li>
             )

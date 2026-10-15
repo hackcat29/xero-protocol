@@ -1,29 +1,29 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { StockMark } from '../components/Brand'
 import { Info, Skeleton, Stat } from '../components/Info'
 import { ChevronIcon, StarIcon } from '../components/icons'
 import { WatchButton } from '../components/Watch'
 import { usePrefs } from '../lib/prefs'
-import { company, stockInfo, term, ticker } from '../lib/assets'
+import { company, term, ticker } from '../lib/assets'
 import { compactUsd, date, pct, toNum, usd } from '../lib/format'
 import { useProtocol, type Asset, type Market } from '../lib/protocol'
 
-type Filter = 'all' | 'watchlist' | 'stock' | 'etf'
+type Filter = 'all' | 'watchlist' | 'dividend'
 type View = 'stocks' | 'maturities'
 type SortKey = 'discount' | 'maturity' | 'symbol' | 'upfront' | 'liquidity'
 
 const FILTERS: { id: Filter; label: string }[] = [
   { id: 'all', label: 'All' },
   { id: 'watchlist', label: 'Watchlist' },
-  { id: 'stock', label: 'Stocks' },
-  { id: 'etf', label: 'ETFs' },
+  { id: 'dividend', label: 'Pays dividends' },
 ]
 
 export function Markets() {
   const { data, isLoading, error } = useProtocol()
   const watch = usePrefs((p) => p.watchlist)
-  const [filter, setFilter] = useState<Filter>('all')
+  const [params] = useSearchParams()
+  const [filter, setFilter] = useState<Filter>(() => (FILTERS.some((f) => f.id === params.get('f')) ? (params.get('f') as Filter) : 'all'))
   const [view, setView] = useState<View>('stocks')
   const [q, setQ] = useState('')
   const [showMatured, setShowMatured] = useState(false)
@@ -31,7 +31,7 @@ export function Markets() {
   const keep = (symbol: string) => {
     const s = q.trim().toLowerCase()
     if (filter === 'watchlist' && !watch.includes(symbol)) return false
-    if ((filter === 'stock' || filter === 'etf') && stockInfo(symbol).kind !== filter) return false
+    if (filter === 'dividend' && !data?.markets.some((m) => m.symbol === symbol && m.live)) return false
     return !s || ticker(symbol).toLowerCase().includes(s) || company(symbol).toLowerCase().includes(s)
   }
   const markets = useMemo(() => (data?.markets ?? []).filter((m) => (showMatured || m.live) && keep(m.symbol)), [data, filter, q, showMatured, watch])
@@ -47,12 +47,12 @@ export function Markets() {
       <header className="page-h">
         <div>
           <h1>Markets</h1>
-          <p className="sub">Every stock on Xero, with today's discount and upfront payout for each maturity.</p>
+          <p className="sub">The tokenized stocks on Base, with today's discount and upfront payout for each maturity. Stocks that pay a dividend can be split; the rest are listed for reference.</p>
         </div>
         <div className="stats">
           <Stat label="Best discount" value={best ? <span className="up">{best.ptDiscountPct.toFixed(2)}%</span> : <Skeleton w={70} h={24} />} sub={best ? `${ticker(best.symbol)} · ${term(best.label)}` : undefined} />
           <Stat label="Most paid upfront" value={bestUp ? <span className="gold">{usd(bestUp.ytUsd * 100)}</span> : <Skeleton w={70} h={24} />} sub={bestUp ? `per 100 ${ticker(bestUp.symbol)} · ${term(bestUp.label)}` : undefined} />
-          <Stat label="Open markets" value={data ? live.length : <Skeleton w={40} h={24} />} sub={data ? `${data.assets.length} stocks · 4 dates` : undefined} />
+          <Stat label="Open markets" value={data ? live.length : <Skeleton w={40} h={24} />} sub={data ? `${new Set(live.map((m) => m.symbol)).size} of ${data.assets.length} stocks pay dividends` : undefined} />
         </div>
       </header>
 
@@ -125,12 +125,15 @@ function StockList({ assets }: { assets: Asset[] }) {
                 <div><b>{ticker(a.symbol)}</b><small>{company(a.symbol)}</small></div>
               </div>
               <div className="r num"><b>{a.priceFresh ? usd(a.sharePriceUsd) : '—'}</b></div>
-              <div className="r num">{best ? <><b className="up">{best.ptDiscountPct.toFixed(2)}%</b><small>{term(best.label)}</small></> : '—'}</div>
-              <div className="r num hide-sm">{best ? <><b className="gold">{usd(best.ytUsd * 100)}</b><small>{term(best.label)}</small></> : '—'}</div>
+              <div className="r num">{best ? <><b className="up">{best.ptDiscountPct.toFixed(2)}%</b><small>{term(best.label)}</small></> : <span className="tag">No dividend</span>}</div>
+              <div className="r num hide-sm">{best ? <><b className="gold">{usd(best.ytUsd * 100)}</b><small>{term(best.label)}</small></> : <small>—</small>}</div>
               <span className="chev"><ChevronIcon size={18} /></span>
             </div>
             {isOpen && (
               <div className="stock-detail">
+                {live.length === 0 && (
+                  <p className="sub">{company(a.symbol)} doesn't pay a dividend, so there's nothing to split. Markets open if it starts paying one.</p>
+                )}
                 <div className="maturity-grid">
                   {live.map((m) => (
                     <div key={m.vault} className="maturity-card">
