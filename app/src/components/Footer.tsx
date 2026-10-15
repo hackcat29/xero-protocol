@@ -1,7 +1,7 @@
 import { Link } from 'react-router'
 import { Logo } from './Brand'
-import { DOCS_URL, GitHubIcon, REPO_URL, docsLink } from './Nav'
-import { BASE_FAUCET_URL, chain, explorer, isDemo } from '../lib/network'
+import { DOCS_URL, REPO_URL, docsLink } from './Nav'
+import { BASE_FAUCET_URL, explorer } from '../lib/network'
 
 const LEGAL =
   'Xero is open-source software running on the Base network. It is not a broker, bank or investment adviser, and is not affiliated with the issuers of the stocks shown. ' +
@@ -42,21 +42,6 @@ export function Footer() {
         </div>
       </div>
       <p className="footer-legal">{LEGAL}</p>
-    </footer>
-  )
-}
-
-export function AppFooter() {
-  return (
-    <footer className="footer footer-app">
-      <div className="footer-app-inner">
-        <span>Xero on {chain.name}{isDemo ? ' · test tokens only' : ''}</span>
-        <nav>
-          <a href={DOCS_URL} target="_blank" rel="noreferrer">Docs</a>
-          <Link to="/">About</Link>
-          <a href={REPO_URL} target="_blank" rel="noreferrer" aria-label="GitHub"><GitHubIcon size={15} /></a>
-        </nav>
-      </div>
     </footer>
   )
 }

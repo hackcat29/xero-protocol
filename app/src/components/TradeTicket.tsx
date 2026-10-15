@@ -6,12 +6,14 @@ import { useAccount, useReadContract } from 'wagmi'
 import { AmountInput } from './AmountInput'
 import { TestTokensButton } from './DevConsole'
 import { Info } from './Info'
+import { ReviewDialog } from './Review'
 import { WalletButton } from './Nav'
 import { WAD, amount, date, parse, pct, toNum, usd } from '../lib/format'
 import { ptName, ticker, ytName } from '../lib/assets'
 import { abis, book, isDemo, read } from '../lib/network'
 import type { Asset, Market } from '../lib/protocol'
 import { ACCOUNT_PLACEHOLDER, useTx } from '../lib/tx'
+import { prefs, usePrefs } from '../lib/prefs'
 
 /** Stands for the connected account in call arguments; useTx substitutes it before simulating. */
 const ACCOUNT = ACCOUNT_PLACEHOLDER
@@ -51,6 +53,12 @@ const shares = (units: bigint) => toNum(units).toLocaleString('en-US', { maximum
 // ------------------------------------------------------------------ shared bits
 
 export const SLIPPAGES = [10n, 50n, 100n] // bps
+
+/** Price protection is remembered between visits. */
+export function useSlippage(): [bigint, (s: bigint) => void] {
+  const bps = usePrefs((p) => p.slippageBps)
+  return [BigInt(bps), (s: bigint) => prefs.setSlippage(Number(s))]
+}
 
 export function SlippagePicker({ slip, setSlip }: { slip: bigint; setSlip: (s: bigint) => void }) {
   return (
@@ -121,6 +129,7 @@ async function quoteBuyPrincipal(market: Market, raw: bigint) {
 
 export function DiscountForm({ asset, market, slip }: { asset: Asset; market: Market; slip: bigint }) {
   const [input, setInput] = useState('')
+  const [review, setReview] = useState(false)
   const value = parse(useDeferredValue(input))
   const bal = useBalance(asset.token)
   const { run, pending } = useTx()
@@ -152,16 +161,38 @@ export function DiscountForm({ asset, market, slip }: { asset: Asset; market: Ma
         <Row k={`1 ${asset.symbol}`} v={`${toNum(asset.multiplier).toFixed(4)} shares`} tip={`Each tokenized share has reinvested the dividends it paid before today, so it holds a little more than one ${ticker(asset.symbol)} share.`} />
       </div>
       <Submit
-        label={!open ? 'Not available' : insufficient ? `Not enough ${asset.symbol}` : `Buy at ${pct(discount, 1)} off`}
+        label={!open ? 'Not available' : insufficient ? `Not enough ${asset.symbol}` : 'Review order'}
         disabled={!open || !q.fresh || insufficient || !book}
         pending={pending}
-        onClick={async () => {
-          const ok = await run(
+        onClick={() => setReview(true)}
+      />
+      <ReviewDialog
+        open={review}
+        onOpenChange={setReview}
+        summary={{
+          title: `Buy ${ticker(asset.symbol)} at a discount`,
+          symbol: asset.symbol,
+          pay: <>{amount(value)} {asset.symbol}<small>{usdOf(value, asset)}</small></>,
+          getLabel: `You receive on ${date(market.maturity)}`,
+          get: <>{shares(units)} shares<small>worth {usd(worthToday)} today</small></>,
+          rows: [
+            { k: "Discount to today's price", v: pct(discount), tone: 'up' },
+            { k: 'Return if held to maturity', v: `${pct(annual)} a year` },
+            { k: 'Minimum shares', v: shares(minOut(units, slip)) },
+            { k: 'Price protection', v: `${Number(slip) / 100}%` },
+          ],
+          note: `You'll hold a share token until ${date(market.maturity)}, then redeem it for the shares.`,
+          confirm: 'Confirm purchase',
+          done: { title: 'Purchase complete', body: <>You'll receive {shares(units)} {ticker(asset.symbol)} shares on {date(market.maturity)}. Your share token is in your portfolio.</> },
+        }}
+        onConfirm={async () => {
+          const h = await run(
             `Buy ${ticker(asset.symbol)} at a discount`,
             [{ address: book!.router, abi: abis.XeroRouter, functionName: 'buyPrincipal', args: [market.vault, market.market, value, minOut(units, slip), ACCOUNT], label: 'Buy at a discount' }],
             [{ token: asset.token, spender: book!.router, amount: value, symbol: asset.symbol }],
           )
-          if (ok) setInput('')
+          if (h) setInput('')
+          return h
         }}
       />
       <p className="hint">
@@ -176,6 +207,7 @@ export function DiscountForm({ asset, market, slip }: { asset: Asset; market: Ma
 
 export function UpfrontForm({ asset, market, slip }: { asset: Asset; market: Market; slip: bigint }) {
   const [input, setInput] = useState('')
+  const [review, setReview] = useState(false)
   const value = parse(useDeferredValue(input))
   const bal = useBalance(asset.token)
   const { run, pending } = useTx()
@@ -210,16 +242,40 @@ export function UpfrontForm({ asset, market, slip }: { asset: Asset; market: Mar
       </div>
       <Submit
         gold
-        label={!open ? 'Not available' : insufficient ? `Not enough ${asset.symbol}` : 'Get my dividends now'}
+        label={!open ? 'Not available' : insufficient ? `Not enough ${asset.symbol}` : 'Review order'}
         disabled={!open || !q.fresh || insufficient || !book}
         pending={pending}
-        onClick={async () => {
-          const ok = await run(
+        onClick={() => setReview(true)}
+      />
+      <ReviewDialog
+        open={review}
+        onOpenChange={setReview}
+        summary={{
+          title: `Get ${ticker(asset.symbol)} dividends upfront`,
+          symbol: asset.symbol,
+          gold: true,
+          pay: <>{amount(value)} {asset.symbol}<small>locked until {date(market.maturity)}</small></>,
+          getLabel: 'Paid to you today',
+          get: <>{usdOf(paid, asset) ?? amount(paid)}<small>{amount(paid)} {asset.symbol}</small></>,
+          rows: [
+            { k: 'Upfront payout', v: `${pct(share)} of your position`, tone: 'gold' },
+            { k: 'Your shares back on', v: date(market.maturity) },
+            { k: 'Shares returned', v: q.data ? shares(q.data.units) : '—' },
+            { k: 'Minimum payout', v: `${amount(minOut(paid, slip))} ${asset.symbol}` },
+            { k: 'Price protection', v: `${Number(slip) / 100}%` },
+          ],
+          note: 'If dividends turn out higher than expected, the buyer keeps the difference; if lower, you keep your payout.',
+          confirm: 'Confirm and get paid',
+          done: { title: "You've been paid", body: <>{usdOf(paid, asset) ? `${usdOf(paid, asset)} (${amount(paid)} ${asset.symbol})` : `${amount(paid)} ${asset.symbol}`} is in your wallet. Your {q.data ? shares(q.data.units) : ''} shares come back on {date(market.maturity)}.</> },
+        }}
+        onConfirm={async () => {
+          const h = await run(
             `Get ${ticker(asset.symbol)} dividends upfront`,
             [{ address: book!.router, abi: abis.XeroRouter, functionName: 'stripAndSellYield', args: [market.vault, market.market, value, minOut(paid, slip), ACCOUNT], label: 'Take dividends upfront' }],
             [{ token: asset.token, spender: book!.router, amount: value, symbol: asset.symbol }],
           )
-          if (ok) setInput('')
+          if (h) setInput('')
+          return h
         }}
       />
       <p className="hint">
@@ -449,7 +505,7 @@ export type TicketTab = 'discount' | 'upfront' | 'dividends' | 'redeem' | 'advan
 
 export function TradeTicket({ asset, market, now, tab: initial = 'discount' }: { asset: Asset; market: Market; now: number; tab?: TicketTab }) {
   const [tab, setTab] = useState<TicketTab>(initial)
-  const [slip, setSlip] = useState(50n)
+  const [slip, setSlip] = useSlippage()
   const active = market.matured && tab !== 'redeem' && tab !== 'advanced' ? 'redeem' : tab
   return (
     <section className="card ticket">

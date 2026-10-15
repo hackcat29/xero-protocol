@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useResolvedTheme } from '../lib/prefs'
 import {
   AreaSeries,
   ColorType,
@@ -41,6 +42,7 @@ export type Point = { time: number; value: number }
 
 /** Implied dividend yield by maturity (line with points) and forward yields (steps). */
 export function YieldCurveChart({ curve, forwards, height = 260 }: { curve: Point[]; forwards: Point[]; height?: number }) {
+  const theme = useResolvedTheme() // colours are read from CSS when the chart is built
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!ref.current || curve.length === 0) return
@@ -72,12 +74,13 @@ export function YieldCurveChart({ curve, forwards, height = 260 }: { curve: Poin
     s.setData(curve.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })))
     chart.timeScale().fitContent()
     return () => chart.remove()
-  }, [curve, forwards])
+  }, [curve, forwards, theme])
   return <div ref={ref} className="chart" style={{ height }} />
 }
 
 /** Time series of the implied yield (area). */
 export function HistoryChart({ data, height = 260 }: { data: Point[]; height?: number }) {
+  const theme = useResolvedTheme()
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!ref.current || data.length === 0) return
@@ -101,7 +104,7 @@ export function HistoryChart({ data, height = 260 }: { data: Point[]; height?: n
     s.setData(dedup.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })))
     chart.timeScale().fitContent()
     return () => chart.remove()
-  }, [data])
+  }, [data, theme])
   return <div ref={ref} className="chart" style={{ height }} />
 }
 

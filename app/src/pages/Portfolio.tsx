@@ -37,27 +37,39 @@ export function Portfolio() {
       <header className="page-h">
         <div>
           <h1>Portfolio</h1>
-          <p className="sub">Everything you hold on Xero.</p>
+          <p className="sub">Everything you hold on Xero. <Link className="link" to="/activity">See your activity</Link></p>
         </div>
-        {claimable.length > 0 && (
-          <button
-            className="btn btn-gold"
-            disabled={pending}
-            onClick={() =>
-              run('Claim all dividends', claimable.map((p: Position) => ({ address: p.market.vault, abi: abis.XeroVault, functionName: 'claimYield', args: [ACCOUNT_PLACEHOLDER], label: `Claim ${ticker(p.market.symbol)}` })))
-            }
-          >
-            Claim {usd(data!.claimableUsd)} in dividends
-          </button>
-        )}
       </header>
 
-      <section className="kpis">
-        <div><span>Positions on Xero</span><b>{data ? usd(data.valueUsd) : <Skeleton w={90} h={26} />}</b></div>
-        <div><span>Dividends to claim</span><b className="gold">{data ? usd(data.claimableUsd) : <Skeleton w={90} h={26} />}</b></div>
-        <div><span>Shares in your wallet</span><b>{data ? usd(stockValue) : <Skeleton w={90} h={26} />}</b></div>
-        <div><span>Ready to redeem</span><b>{data ? redeemable.length : <Skeleton w={30} h={26} />}</b></div>
+      <section className="card summary" style={{ marginBottom: 20 }}>
+        <span className="summary-label">Total value</span>
+        <div className="summary-value">{data ? usd(data.valueUsd + stockValue) : <Skeleton w={220} h={48} />}</div>
+        <div className="summary-split">
+          <div><span>On Xero</span><b>{data ? usd(data.valueUsd) : '—'}</b></div>
+          <div><span>Shares in wallet</span><b>{data ? usd(stockValue) : '—'}</b></div>
+          <div><span>Dividends to claim</span><b className="gold">{data ? usd(data.claimableUsd) : '—'}</b></div>
+        </div>
+        {claimable.length > 0 && (
+          <div className="row-btns" style={{ justifyContent: 'flex-start' }}>
+            <button
+              className="btn btn-gold"
+              disabled={pending}
+              onClick={() =>
+                run('Claim all dividends', claimable.map((p: Position) => ({ address: p.market.vault, abi: abis.XeroVault, functionName: 'claimYield', args: [ACCOUNT_PLACEHOLDER], label: `Claim ${ticker(p.market.symbol)}` })))
+              }
+            >
+              Claim {usd(data!.claimableUsd)} in dividends
+            </button>
+          </div>
+        )}
       </section>
+
+      {redeemable.length > 0 && (
+        <div className="banner banner-ready">
+          <b>{redeemable.length === 1 ? '1 position has' : `${redeemable.length} positions have`} reached maturity.</b> Redeem your share tokens for the shares.
+          <Link className="btn btn-sm btn-primary" to={`/markets/${redeemable[0].market.symbol}?m=${redeemable[0].market.label}&do=redeem`}>Redeem</Link>
+        </div>
+      )}
 
       <section className="card" style={{ marginBottom: 20 }}>
         <div className="card-h card-pad" style={{ marginBottom: 0, paddingBottom: 6 }}><h3>Positions</h3></div>

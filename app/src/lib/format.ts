@@ -74,14 +74,26 @@ export function timeAgo(ts: number, now = Date.now() / 1000) {
   return `${Math.floor(s / 86400)}d ago`
 }
 
+/** Raw revert data anywhere in a viem error's cause chain (e.g. an ERC-20 error the router's ABI can't decode). */
+function revertData(e: unknown): string | undefined {
+  for (let c = e as { cause?: unknown; data?: unknown; raw?: unknown; message?: string } | undefined, i = 0; c && i < 8; c = c.cause as typeof c, i++) {
+    for (const v of [c.raw, c.data, (c.data as { data?: unknown } | undefined)?.data]) if (typeof v === 'string' && /^0x[0-9a-f]{8}/i.test(v)) return v
+    const m = /data: "?(0x[0-9a-f]{8,})/i.exec(c.message ?? '')
+    if (m) return m[1]
+  }
+  return undefined
+}
+
 export function errMsg(e: unknown): string {
   const x = e as { shortMessage?: string; message?: string; details?: string; cause?: { data?: { errorName?: string }; reason?: string } }
   if (x?.cause?.data?.errorName) return humanError(x.cause.data.errorName)
   const m = x?.shortMessage ?? x?.message ?? String(e)
   if (/User rejected|denied/i.test(m)) return 'Transaction rejected in wallet'
   const custom = /reverted with the following reason:\s*(.+)|error (\w+)\(/.exec(m)
+  const raw = revertData(e)?.slice(0, 10).toLowerCase()
+  if (raw && SELECTORS[raw]) return SELECTORS[raw]
   if (custom) return humanError(custom[1] ?? custom[2])
-  const selector = /signature:\s*(0x[0-9a-f]{8})/i.exec(m + ' ' + (x?.details ?? ''))?.[1]
+  const selector = /signature:\s*(0x[0-9a-f]{8})/i.exec(m + ' ' + (x?.details ?? ''))?.[1] ?? revertData(e)?.slice(0, 10)
   if (selector) return SELECTORS[selector.toLowerCase()] ?? 'The network rejected this transaction. Please try again.'
   if (/reverted/i.test(m)) return 'The network rejected this transaction. Please try again.'
   return m.split('\n')[0]
@@ -100,6 +112,7 @@ const ERRORS: Record<string, string> = {
   ZeroAmount: 'Amount is too small',
   MathError: 'Trade size exceeds available liquidity',
   InsufficientOutput: 'Price moved beyond your price protection',
+  FaucetCooldown: 'You can claim each test stock once a day',
   ERC20InsufficientAllowance: 'Token approval not confirmed yet. Please try again in a moment',
   ERC20InsufficientBalance: 'Not enough balance for this trade',
 }

@@ -1,9 +1,6 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useEffect, useRef, useState } from 'react'
-import { NavLink } from 'react-router'
-import { Logo } from './Brand'
-import { chain, isDemo, isDevnet, networks, switchNetwork } from '../lib/network'
-import { TestTokensButton } from './DevConsole'
+import { chain, isDevnet, networks, switchNetwork } from '../lib/network'
 
 export const REPO_URL = 'https://github.com/hackcat29/xero-protocol'
 const HOSTED_DOCS: string | undefined = import.meta.env.VITE_DOCS_URL
@@ -11,37 +8,8 @@ export const DOCS_URL: string = HOSTED_DOCS ?? `${REPO_URL}/tree/main/docs`
 /** A docs page by its Mintlify path ("guides/buy-at-a-discount"): the hosted site when configured, else the source on GitHub. */
 export const docsLink = (path: string) => (HOSTED_DOCS ? `${HOSTED_DOCS.replace(/\/$/, '')}/${path}` : `${REPO_URL}/blob/main/docs/${path}.mdx`)
 
-/** App header: what you can do, your holdings, network and wallet. */
-export function AppNav() {
-  return (
-    <>
-      <header className="nav nav-app">
-        <div className="nav-inner">
-          <Logo />
-          <nav className="app-tabs" aria-label="App">
-            <NavLink to="/markets">Markets</NavLink>
-            <NavLink to="/discount">Buy at a discount</NavLink>
-            <NavLink to="/upfront">Dividends upfront</NavLink>
-            <NavLink to="/portfolio">Portfolio</NavLink>
-          </nav>
-          <div className="nav-right">
-            {isDemo && <TestTokensButton />}
-            <NetworkSwitch />
-            <WalletButton />
-          </div>
-        </div>
-      </header>
-      <nav className="tabbar" aria-label="App">
-        <NavLink to="/markets"><MarketsIcon />Markets</NavLink>
-        <NavLink to="/discount"><DiscountIcon />Discount</NavLink>
-        <NavLink to="/upfront"><UpfrontIcon />Upfront</NavLink>
-        <NavLink to="/portfolio"><PortfolioIcon />Portfolio</NavLink>
-      </nav>
-    </>
-  )
-}
-
-function NetworkSwitch() {
+/** Network pill; becomes a menu when more than one network is deployed. */
+export function NetworkSwitch() {
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -118,21 +86,6 @@ export function WalletButton({ block = false, label = 'Connect wallet' }: { bloc
 }
 
 // ------------------------------------------------------------------ icons
-
-const icon = { width: 20, height: 20, viewBox: '0 0 20 20', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true }
-
-const MarketsIcon = () => (
-  <svg {...icon}><path d="M3 15l4.5-5 3.5 3L17 6" /><path d="M13 6h4v4" /></svg>
-)
-const DiscountIcon = () => (
-  <svg {...icon}><path d="M17 10.5L10.5 17 3 9.5V3h6.5L17 10.5z" /><circle cx="6.5" cy="6.5" r="1.2" fill="currentColor" /></svg>
-)
-const UpfrontIcon = () => (
-  <svg {...icon}><circle cx="10" cy="10" r="7" /><path d="M10 6v8M7 9l3-3 3 3" /></svg>
-)
-const PortfolioIcon = () => (
-  <svg {...icon}><rect x="3" y="6" width="14" height="11" rx="2" /><path d="M7 6V4.5A1.5 1.5 0 0 1 8.5 3h3A1.5 1.5 0 0 1 13 4.5V6" /></svg>
-)
 
 export const GitHubIcon = ({ size = 18 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">

@@ -1,8 +1,7 @@
-import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { StockMark } from '../components/Brand'
 import { Skeleton } from '../components/Info'
-import { DiscountForm, SlippagePicker, UpfrontForm } from '../components/TradeTicket'
+import { DiscountForm, SlippagePicker, UpfrontForm, useSlippage } from '../components/TradeTicket'
 import { company, term, ticker } from '../lib/assets'
 import { date, pct, usd } from '../lib/format'
 import { useProtocol, type Asset, type Market } from '../lib/protocol'
@@ -44,7 +43,7 @@ export function UpfrontPage() {
 function Offers({ mode }: { mode: Mode }) {
   const { data, isLoading } = useProtocol()
   const [params, setParams] = useSearchParams()
-  const [slip, setSlip] = useState(50n)
+  const [slip, setSlip] = useSlippage()
   const c = COPY[mode]
 
   const assets = data?.assets ?? []

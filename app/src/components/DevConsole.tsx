@@ -1,5 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { keccak256, toHex, type Address } from 'viem'
 import { useAccount } from 'wagmi'
@@ -11,13 +11,13 @@ import { company, ticker } from '../lib/assets'
 import { useProtocol } from '../lib/protocol'
 import { PERSONAS } from '../lib/wagmi'
 import { useTx } from '../lib/tx'
-import { WAD, parse, toNum, usd } from '../lib/format'
+import { WAD, amount, duration, parse, toNum, usd } from '../lib/format'
 
 const ACTION = { FORWARD_SPLIT: 2 } as const
 const ref = () => keccak256(toHex(`${Date.now()}-${Math.random()}`))
 
 /** Testnet only: claim free test stock, and (for the issuer key) simulate dividends, splits and prices. */
-export function TestTokensButton({ label = 'Test tokens', className = 'btn btn-sm btn-gold hide-md' }: { label?: string; className?: string }) {
+export function TestTokensButton({ label = 'Test tokens', className = 'btn btn-sm btn-gold hide-md' }: { label?: React.ReactNode; className?: string }) {
   const [open, setOpen] = useState(false)
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
@@ -40,6 +40,23 @@ function TestTokens() {
   const { data } = useProtocol()
   const { address } = useAccount()
   const { run, pending } = useTx()
+  // one claim per stock per day: show when each becomes available again
+  const claims = useQuery({
+    queryKey: ['faucet', address, data?.assets.length],
+    enabled: !!address && !!data,
+    refetchInterval: 20_000,
+    queryFn: () =>
+      Promise.all(
+        data!.assets.map(async (a) => {
+          const [last, bal] = await Promise.all([
+            read<bigint>(a.token, abis.MockB20StockToken, 'lastFaucet', [address!]).catch(() => 0n),
+            read<bigint>(a.token, abis.MockB20StockToken, 'balanceOf', [address!]),
+          ])
+          return { token: a.token, next: Number(last) + 86_400, bal }
+        }),
+      ),
+  })
+  const now = Date.now() / 1000
 
   if (!data || !book) return <p className="hint">Loading markets…</p>
   return (
@@ -53,19 +70,25 @@ function TestTokens() {
         <WalletButton block label="Connect wallet to claim" />
       ) : (
         <div className="console-stocks">
-          {data.assets.map((a) => (
-            <button
-              key={a.token}
-              disabled={pending}
-              onClick={() => run(`Claim test ${ticker(a.symbol)}`, [{ address: a.token, abi: abis.MockStockToken, functionName: 'faucet' }])}
-            >
-              <StockMark symbol={a.symbol} size={32} />
-              <div>
-                <b>{ticker(a.symbol)}</b>
-                <span>Claim</span>
-              </div>
-            </button>
-          ))}
+          {data.assets.map((a) => {
+            const c = claims.data?.find((x) => x.token === a.token)
+            const wait = c && c.next > now ? c.next - now : 0
+            const checking = !c && claims.isLoading
+            return (
+              <button
+                key={a.token}
+                disabled={pending || wait > 0 || checking}
+                onClick={() => run(`Claim test ${ticker(a.symbol)}`, [{ address: a.token, abi: abis.MockB20StockToken, functionName: 'faucet' }])}
+              >
+                <StockMark symbol={a.symbol} size={32} />
+                <div>
+                  <b>{ticker(a.symbol)}</b>
+                  <span>{checking ? 'Checking…' : wait > 0 ? `Next claim in ${duration(wait)}` : 'Claim'}</span>
+                  {c && c.bal > 0n && <span>You have {amount(c.bal)}</span>}
+                </div>
+              </button>
+            )
+          })}
         </div>
       )}
       <IssuerControls />

@@ -22,16 +22,7 @@ export function AmountInput({ label, value, onChange, symbol, tokenLabel, kind =
     <div className={`amount ${readOnly ? 'amount-ro' : ''} ${error ? 'amount-err' : ''}`}>
       <div className="amount-top">
         <span>{label}</span>
-        {balance !== undefined && (
-          <span className="amount-bal">
-            Balance {amount(balance)}
-            {!readOnly && balance > 0n && (
-              <button type="button" className="chip-btn" onClick={() => onChange?.(toInput(balance))}>
-                Max
-              </button>
-            )}
-          </span>
-        )}
+        {balance !== undefined && <span className="amount-bal">Balance {amount(balance)}</span>}
       </div>
       <div className="amount-row">
         <input
@@ -47,7 +38,18 @@ export function AmountInput({ label, value, onChange, symbol, tokenLabel, kind =
           {shown}
         </span>
       </div>
-      {usd && <div className="amount-usd">{usd}</div>}
+      <div className="amount-foot">
+        <span className="amount-usd">{usd ?? ''}</span>
+        {!readOnly && balance !== undefined && balance > 0n && (
+          <span className="amount-chips">
+            {[25n, 50n, 75n, 100n].map((p) => (
+              <button key={String(p)} type="button" className="chip-btn" onClick={() => onChange?.(toInput((balance * p) / 100n))}>
+                {p === 100n ? 'Max' : `${p}%`}
+              </button>
+            ))}
+          </span>
+        )}
+      </div>
     </div>
   )
 }

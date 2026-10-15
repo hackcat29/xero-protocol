@@ -4,7 +4,8 @@ import { toast } from 'sonner'
 import { maxUint256, type Abi, type Address, type Hash } from 'viem'
 import { useAccount } from 'wagmi'
 import { readContract, simulateContract, waitForTransactionReceipt, writeContract } from 'wagmi/actions'
-import { abis, explorer } from './network'
+import { abis, chainId, explorer } from './network'
+import { prefs } from './prefs'
 import { wagmiConfig } from './wagmi'
 import { errMsg } from './format'
 
@@ -24,10 +25,10 @@ export function useTx() {
   const [pending, setPending] = useState(false)
 
   const run = useCallback(
-    async (title: string, calls: Call[], approvals: Approval[] = []): Promise<boolean> => {
+    async (title: string, calls: Call[], approvals: Approval[] = []): Promise<Hash | undefined> => {
       if (!address) {
         toast.error('Connect a wallet first')
-        return false
+        return undefined
       }
       setPending(true)
       const id = toast.loading(title, { description: 'Preparing…' })
@@ -67,7 +68,9 @@ export function useTx() {
               ;({ request } = await simulate())
               break
             } catch (e) {
-              if (i === 0 || attempt >= 4) throw e
+              // a revert on the first step is a real answer; anything else may be a dropped or lagging RPC call
+              const revert = /revert/i.test(String((e as Error)?.message))
+              if (attempt >= 4 || (i === 0 && revert)) throw e
               await new Promise((r) => setTimeout(r, 1500))
             }
           }
@@ -76,6 +79,7 @@ export function useTx() {
           const receipt = await waitForTransactionReceipt(wagmiConfig, { hash: last })
           if (receipt.status !== 'success') throw new Error('Transaction reverted')
         }
+        if (last) prefs.logActivity({ hash: last, title, time: Math.floor(Date.now() / 1000), chainId, account: address })
         toast.success(title, {
           id,
           description: 'Confirmed',
@@ -84,11 +88,13 @@ export function useTx() {
         // Refresh in the background: callers reset their inputs on success, and waiting for every query to
         // refetch (seconds on a public RPC) would wipe whatever the user typed for the next trade meanwhile.
         void qc.invalidateQueries()
-        return true
+        // and once more shortly after, in case the node that answered first hadn't seen this block yet
+        setTimeout(() => void qc.invalidateQueries(), 4_000)
+        return last
       } catch (e) {
         console.error(`[xero tx] ${title}`, e)
         toast.error(title, { id, description: errMsg(e) })
-        return false
+        return undefined
       } finally {
         setPending(false)
       }

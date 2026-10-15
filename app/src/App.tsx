@@ -5,18 +5,22 @@ import { BrowserRouter, Link, Navigate, Outlet, Route, Routes, useLocation } fro
 import { Toaster } from 'sonner'
 import { WagmiProvider } from 'wagmi'
 import { useEffect } from 'react'
-import { AppNav, DOCS_URL } from './components/Nav'
+import { DOCS_URL } from './components/Nav'
+import { AppShell } from './components/AppShell'
 import { SiteNav } from './components/SiteNav'
-import { AppFooter, Footer } from './components/Footer'
+import { Footer } from './components/Footer'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { Landing } from './pages/Landing'
 import { Markets } from './pages/Markets'
 import { AssetPage } from './pages/AssetPage'
 import { DiscountPage, UpfrontPage } from './pages/Offers'
 import { Portfolio } from './pages/Portfolio'
+import { Home } from './pages/Home'
+import { Activity } from './pages/Activity'
 import { PricingPage } from './pages/Pricing'
 import { SecurityPage } from './pages/Security'
 import { book, chain } from './lib/network'
+import { useResolvedTheme } from './lib/prefs'
 import { wagmiConfig } from './lib/wagmi'
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: true, retry: 1 } } })
@@ -34,10 +38,11 @@ const rkTheme = {
 }
 
 export default function App() {
+  const theme = useResolvedTheme()
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={rkTheme} modalSize="compact" appInfo={{ appName: 'Xero', disclaimer: Disclaimer }}>
+        <RainbowKitProvider theme={rkTheme[theme === 'dark' ? 'darkMode' : 'lightMode']} modalSize="compact" appInfo={{ appName: 'Xero', disclaimer: Disclaimer }}>
           <Tooltip.Provider>
             <BrowserRouter>
               <Routes>
@@ -45,6 +50,8 @@ export default function App() {
                   <Route index element={<Landing />} />
                   <Route path="pricing" element={<PricingPage />} />
                   <Route path="security" element={<SecurityPage />} />
+                  <Route path="app" element={<Gate><Home /></Gate>} />
+                  <Route path="activity" element={<Activity />} />
                   <Route path="markets" element={<Gate><Markets /></Gate>} />
                   <Route path="markets/:symbol" element={<Gate><AssetPage /></Gate>} />
                   <Route path="discount" element={<Gate><DiscountPage /></Gate>} />
@@ -58,7 +65,7 @@ export default function App() {
                 </Route>
               </Routes>
             </BrowserRouter>
-            <Toaster theme="system" position="bottom-left" mobileOffset={{ bottom: 84 }} richColors closeButton toastOptions={{ className: 'toast' }} />
+            <Toaster theme={theme} position="bottom-left" mobileOffset={{ bottom: 84 }} richColors closeButton toastOptions={{ className: 'toast' }} />
           </Tooltip.Provider>
         </RainbowKitProvider>
       </QueryClientProvider>
@@ -75,16 +82,17 @@ function Shell() {
     if (hash) document.getElementById(hash.slice(1))?.scrollIntoView()
     else window.scrollTo(0, 0)
   }, [pathname, hash])
-  const site = SITE_PAGES.has(pathname)
+  const page = (
+    <ErrorBoundary resetKey={pathname}>
+      <Outlet />
+    </ErrorBoundary>
+  )
+  if (!SITE_PAGES.has(pathname)) return <AppShell>{page}</AppShell>
   return (
-    <div className={`shell ${site ? 'shell-site' : 'shell-app'}`}>
-      {site ? <SiteNav /> : <AppNav />}
-      <main id="main">
-        <ErrorBoundary resetKey={pathname}>
-          <Outlet />
-        </ErrorBoundary>
-      </main>
-      {site ? <Footer /> : <AppFooter />}
+    <div className="shell shell-site">
+      <SiteNav />
+      <main id="main">{page}</main>
+      <Footer />
     </div>
   )
 }

@@ -120,7 +120,7 @@ export function SiteNav() {
     <>
       {isDemo && (
         <div className="announce">
-          Xero is live on Base Sepolia with free test tokens. <Link to="/markets">Try it</Link>
+          Xero is live on Base Sepolia with free test tokens. <Link to="/app">Try it</Link>
         </div>
       )}
       <header className="nav nav-site" ref={root}>
@@ -158,7 +158,7 @@ export function SiteNav() {
             <a className="icon-link hide-md" href={REPO_URL} target="_blank" rel="noreferrer" aria-label="Xero on GitHub" title="GitHub">
               <GitHubIcon />
             </a>
-            <Link to="/markets" className="btn btn-primary">Open app</Link>
+            <Link to="/app" className="btn btn-primary">Open app</Link>
             <button className="menu-toggle" aria-expanded={sheet} aria-controls="site-sheet" aria-label={sheet ? 'Close menu' : 'Open menu'} onClick={() => {
               setSheetTop(root.current?.getBoundingClientRect().bottom ?? 68)
               setSheet((s) => !s)
@@ -182,7 +182,7 @@ export function SiteNav() {
             <Link key={m.label} className="sheet-top" to={m.href!} onClick={() => setSheet(false)}>{m.label}</Link>
           ),
         )}
-        <Link to="/markets" className="btn btn-primary btn-lg btn-block" onClick={() => setSheet(false)}>Open app</Link>
+        <Link to="/app" className="btn btn-primary btn-lg btn-block" onClick={() => setSheet(false)}>Open app</Link>
       </div>
     </>
   )

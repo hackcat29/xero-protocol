@@ -6,6 +6,7 @@ import { StockMark } from '../components/Brand'
 import { HistoryChart, YieldCurveChart, type Point } from '../components/Charts'
 import { Info, Skeleton, Stat } from '../components/Info'
 import { TradeTicket, type TicketTab } from '../components/TradeTicket'
+import { WatchButton } from '../components/Watch'
 import { company, ptName, stockInfo, term, ticker, ytName } from '../lib/assets'
 import { WAD, amount, compactUsd, date, duration, pct, short, timeAgo, toNum, usd } from '../lib/format'
 import { explorer } from '../lib/network'
@@ -54,9 +55,12 @@ export function AssetPage() {
             <p>{ticker(asset.symbol)} · {info.kind === 'etf' ? 'ETF' : 'Stock'} · tokenized on Base as {asset.symbol}</p>
           </div>
         </div>
-        <div className="asset-price">
-          <b>{asset.priceFresh ? usd(asset.sharePriceUsd) : '—'}</b>
-          <span>{asset.priceFresh ? 'Price per share' : 'Price feed is updating'}</span>
+        <div className="asset-side">
+          <WatchButton symbol={asset.symbol} label />
+          <div className="asset-price">
+            <b>{asset.priceFresh ? usd(asset.sharePriceUsd) : '—'}</b>
+            <span>{asset.priceFresh ? 'Price per share' : 'Price feed is updating'}</span>
+          </div>
         </div>
       </header>
 

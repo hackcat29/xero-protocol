@@ -72,28 +72,47 @@ console.log(`ok   connected as ${wallet ? wallet.address : 'Alice'}`)
 
 // testnet wallets start empty: claim test SCHD from the Test tokens dialog
 if (wallet && (await wallet.schdBalance()) < 150n * 10n ** 18n) {
-  await clickText('button', 'Test tokens')
-  await clickText('.console-stocks button', 'SCHD')
-  await expectToast('Claim test SCHD')
+  await clickText('button', 'Get test tokens')
+  await page.waitForFunction(() => [...document.querySelectorAll('.console-stocks button')].some((b) => b.textContent.includes('SCHD') && /Claim|Next claim/.test(b.textContent) && !b.textContent.includes('Checking')))
+  const cooling = await page.$$eval('.console-stocks button', (bs) => bs.find((b) => b.textContent.includes('SCHD'))?.textContent.includes('Next claim'))
+  if (cooling) console.log('skip test SCHD claim (claimed in the last day)')
+  else {
+    await clickText('.console-stocks button', 'SCHD')
+    await expectToast('Claim test SCHD')
+  }
   await page.keyboard.press('Escape')
 }
 const primary = (text) => clickText('.ticket button.btn-primary, .ticket button.btn-gold', text, 20000)
 
-// 1. buy at a discount (router.buyPrincipal)
+// review sheet: confirm, wait for the receipt, close it
+const SHOTS = process.env.E2E_SHOTS // directory for optional screenshots of the review sheet and receipt
+let shot = 0
+async function confirmReview(button, toastTitle) {
+  await page.waitForSelector('.review')
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/review-${++shot}.png` })
+  await clickText('.review button', button, 20000)
+  await expectToast(toastTitle)
+  await page.waitForSelector('.review-done', { timeout: 30000 })
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/receipt-${shot}.png` })
+  await clickText('.review-done button', 'Done')
+  await page.waitForFunction(() => !document.querySelector('.review'), { timeout: 5000 })
+}
+
+// 1. buy at a discount (router.buyPrincipal), through the review sheet
 await tab('Discount')
-await typeInto(0, '10')
-await primary('Buy at')
-await expectToast('Buy SCHD at a discount')
+await typeInto(0, '2')
+await primary('Review order')
+await confirmReview('Confirm purchase', 'Buy SCHD at a discount')
 
 // 2. take dividends upfront (router.stripAndSellYield)
 await tab('Upfront')
-await typeInto(0, '20')
-await primary('Get my dividends now')
-await expectToast('Get SCHD dividends upfront')
+await typeInto(0, '3')
+await primary('Review order')
+await confirmReview('Confirm and get paid', 'Get SCHD dividends upfront')
 
 // 3. buy dividend tokens, then sell some back
 await tab('Dividends')
-await typeInto(0, '10')
+await typeInto(0, '2')
 await primary('Buy dividends')
 await expectToast('Buy SCHD dividend token')
 await clickText('.ticket .seg button', 'Sell dividends')
@@ -104,32 +123,37 @@ await expectToast('Sell SCHD dividend token')
 // 4. split shares, then rejoin part of them
 await tab('More')
 await clickText('.ticket .seg button', 'Split shares')
-await typeInto(0, '25')
+await typeInto(0, '3')
 await primary('Split')
 await expectToast('Split SCHD')
 await tab('Redeem')
-await typeInto(0, '5')
+await typeInto(0, '1')
 await primary('Rejoin into shares')
 await expectToast('Rejoin SCHD')
 
 // 5. add liquidity
 await tab('More')
 await clickText('.ticket .seg button', 'Add liquidity')
-await typeInto(0, '5')
+await typeInto(0, '2')
 await primary('Add liquidity')
 await expectToast('Add liquidity')
 
 // 6. the dedicated discount page, on another maturity
-await clickText('.app-tabs a', 'Buy at a discount')
+await clickText('.side-nav a', 'Buy at a discount')
 await clickText('.terms button', '6 mo')
 await page.waitForFunction(() => new URL(location.href).searchParams.get('m') === '6M')
 await new Promise((r) => setTimeout(r, 800)) // the ticket remounts for the new maturity
-await typeInto(0, '5')
-await primary('Buy at')
-await expectToast('Buy SCHD at a discount')
+await typeInto(0, '1')
+await primary('Review order')
+await confirmReview('Confirm purchase', 'Buy SCHD at a discount')
 
-// 7. portfolio shows the positions (client-side navigation), and the session survives a reload
-await clickText('.app-tabs a', 'Portfolio')
+// 7. the transactions show up in Activity
+await clickText('.side-nav a', 'Activity')
+await page.waitForSelector('.activity-list li', { timeout: 10000 })
+console.log(`ok   activity lists ${(await page.$$('.activity-list li')).length} transaction(s)`)
+
+// 8. portfolio shows the positions (client-side navigation), and the session survives a reload
+await clickText('.side-nav a', 'Portfolio')
 await page.waitForSelector('.table tbody tr', { timeout: 20000 })
 await page.reload({ waitUntil: 'domcontentloaded' })
 const reconnected = await page.waitForSelector('.btn-account', { timeout: 15000 }).then(() => true, () => false)
@@ -138,6 +162,16 @@ if (!reconnected) process.exitCode = 1
 await page.waitForSelector('.table tbody tr', { timeout: 20000 }).catch(() => {})
 const rows = await page.$$eval('.table tbody tr', (r) => r.map((x) => x.querySelector('b')?.textContent))
 console.log(`ok   portfolio lists ${rows.length} position(s): ${rows.join(', ')}`)
+
+if (SHOTS) {
+  await clickText('.side-nav a', 'Home')
+  await page.waitForSelector('.summary-value')
+  await new Promise((r) => setTimeout(r, 2500))
+  await page.screenshot({ path: `${SHOTS}/home-connected.png` })
+  await page.click('.btn-account')
+  await page.waitForSelector('.account-menu')
+  await page.screenshot({ path: `${SHOTS}/account-menu.png` })
+}
 
 if (errors.length) {
   console.log('page errors:', errors.slice(0, 3))
