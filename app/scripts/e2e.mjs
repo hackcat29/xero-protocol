@@ -32,9 +32,18 @@ const clickText = async (selector, text, timeout = 15000) => {
   await el.asElement().click()
 }
 const typeInto = async (index, value) => {
-  const inputs = await page.$$('.ticket input[inputmode="decimal"]:not([readonly])')
-  await inputs[index].click({ clickCount: 3 })
-  await inputs[index].type(value)
+  // tickets re-mount when their data loads; retry if the input we grabbed was replaced
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const inputs = await page.$$('.ticket input[inputmode="decimal"]:not([readonly])')
+      await inputs[index].click({ clickCount: 3 })
+      await inputs[index].type(value)
+      return
+    } catch (e) {
+      if (attempt >= 3) throw e
+      await new Promise((r) => setTimeout(r, 700))
+    }
+  }
 }
 async function expectToast(title) {
   const t = Date.now()
@@ -122,7 +131,6 @@ await expectToast('Sell MSFT dividend token')
 
 // 4. split shares, then rejoin part of them
 await tab('More')
-await clickText('.ticket .seg button', 'Split shares')
 await typeInto(0, '3')
 await primary('Split')
 await expectToast('Split MSFT')
@@ -131,12 +139,17 @@ await typeInto(0, '1')
 await primary('Rejoin into shares')
 await expectToast('Rejoin MSFT')
 
-// 5. add liquidity
-await tab('More')
-await clickText('.ticket .seg button', 'Add liquidity')
-await typeInto(0, '2')
-await primary('Add liquidity')
-await expectToast('Add liquidity')
+// 5. liquidity in one step from shares (router.addLiquidityFromStock), then a partial withdrawal back to shares
+await clickText('.side-nav a', 'Liquidity')
+await page.waitForSelector('.ticket .amount')
+await new Promise((r) => setTimeout(r, 1500))
+await typeInto(0, '1')
+await primary('Review deposit')
+await confirmReview('Confirm deposit', 'Add MSFT liquidity')
+await tab('Withdraw')
+await typeInto(0, '0.005')
+await primary('Review withdrawal')
+await confirmReview('Confirm withdrawal', 'Withdraw MSFT liquidity')
 
 // 6. the dedicated discount page, on another maturity
 await clickText('.side-nav a', 'Buy at a discount')

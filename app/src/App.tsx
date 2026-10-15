@@ -17,6 +17,7 @@ import { DiscountPage, UpfrontPage } from './pages/Offers'
 import { Portfolio } from './pages/Portfolio'
 import { Home } from './pages/Home'
 import { Activity } from './pages/Activity'
+import { Liquidity } from './pages/Liquidity'
 import { PricingPage } from './pages/Pricing'
 import { SecurityPage } from './pages/Security'
 import { book, chain } from './lib/network'
@@ -56,6 +57,7 @@ export default function App() {
                   <Route path="markets/:symbol" element={<Gate><AssetPage /></Gate>} />
                   <Route path="discount" element={<Gate><DiscountPage /></Gate>} />
                   <Route path="upfront" element={<Gate><UpfrontPage /></Gate>} />
+                  <Route path="liquidity" element={<Gate><Liquidity /></Gate>} />
                   <Route path="portfolio" element={<Gate><Portfolio /></Gate>} />
                   {/* earlier addresses */}
                   <Route path="strip" element={<Navigate to="/upfront" replace />} />

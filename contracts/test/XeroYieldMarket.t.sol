@@ -183,6 +183,57 @@ contract XeroYieldMarketTest is XeroFixture {
         assertEq(yt.balanceOf(address(router)), 0);
     }
 
+    function test_RouterAddLiquidityFromStockKeepsFullExposure() public {
+        uint256 before = aapl.balanceOf(carol);
+        vm.prank(carol);
+        (uint256 lp, uint256 units) = router.addLiquidityFromStock(vault, market, 100 ether, 0, carol);
+        assertEq(market.balanceOf(carol), lp);
+        assertEq(pt.balanceOf(carol), units);
+        // PT + the pool's YT rejoin to stock; together with the pooled stock and any refund that's the whole deposit
+        uint256 pooledQuote = lp * market.reserveQuote() / market.totalSupply();
+        uint256 refund = aapl.balanceOf(carol) + 100 ether - before;
+        assertApproxEqRel(units * 1e18 / vault.dividendIndex() + pooledQuote + refund, 100 ether, 0.001e18);
+        assertApproxEqRel(lp * market.reserveYt() / market.totalSupply() + yt.balanceOf(carol), units, 1e12);
+        assertEq(aapl.balanceOf(address(router)), 0);
+        assertEq(yt.balanceOf(address(router)), 0);
+        assertEq(pt.balanceOf(address(router)), 0);
+    }
+
+    function test_RouterRemoveLiquidityToStockRoundTrips() public {
+        uint256 start = aapl.balanceOf(carol);
+        vm.startPrank(carol);
+        (uint256 lp,) = router.addLiquidityFromStock(vault, market, 100 ether, 0, carol);
+        market.approve(address(router), lp);
+        pt.approve(address(router), type(uint256).max);
+        uint256 raw = router.removeLiquidityToStock(vault, market, lp, 0, carol);
+        vm.stopPrank();
+        assertGt(raw, 0);
+        assertEq(market.balanceOf(carol), 0);
+        assertApproxEqRel(aapl.balanceOf(carol), start, 0.001e18); // only the 0.05% split fee is lost
+        assertEq(aapl.balanceOf(address(router)), 0);
+        assertEq(yt.balanceOf(address(router)), 0);
+        assertEq(market.balanceOf(address(router)), 0);
+    }
+
+    function test_RouterRemoveLiquidityToStockEnforcesMinimum() public {
+        vm.startPrank(carol);
+        (uint256 lp,) = router.addLiquidityFromStock(vault, market, 10 ether, 0, carol);
+        market.approve(address(router), lp);
+        pt.approve(address(router), type(uint256).max);
+        vm.expectRevert(XeroRouter.InsufficientOutput.selector);
+        router.removeLiquidityToStock(vault, market, lp, 1_000 ether, carol);
+        vm.stopPrank();
+    }
+
+    function testFuzz_RouterAddLiquidityFromStockLeavesNothingBehind(uint256 raw) public {
+        raw = bound(raw, 1e15, 500 ether);
+        vm.prank(carol);
+        router.addLiquidityFromStock(vault, market, raw, 0, carol);
+        assertEq(aapl.balanceOf(address(router)), 0);
+        assertEq(yt.balanceOf(address(router)), 0);
+        assertEq(pt.balanceOf(address(router)), 0);
+    }
+
     function test_RouterExitRecombinesAndClaims() public {
         vm.prank(carol);
         uint256 units = router.strip(vault, 100 ether, carol);

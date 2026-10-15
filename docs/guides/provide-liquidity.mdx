@@ -1,27 +1,47 @@
 ---
 title: "Provide liquidity"
-description: "Earn trading fees and dividends by funding a dividend market."
+description: "Deposit shares in one step, stay invested, and earn trading fees."
 ---
 
-Every market's prices come from a pool holding dividend tokens and the tokenized stock. Liquidity providers fund that pool and earn:
+Every dividend market has a pool of dividend tokens and shares that people trade against. Liquidity providers fund those pools and earn:
 
-- the **0.3% fee** on every trade, and
-- the **dividends** collected by the dividend tokens in the pool, which are added to the pool automatically.
+- the **0.3% fee** on every trade in the pool, and
+- the **dividends** collected by the pool's dividend tokens, which are added to the pool automatically.
 
-## How to add liquidity
+Your deposit stays fully invested in the stock the whole time.
+
+## Deposit
 
 <Steps>
-  <Step title="Get dividend tokens">
-    In a market's ticket, open **More → Split shares** to split tokenized stock into share tokens and dividend tokens.
+  <Step title="Pick a pool">
+    Open **Liquidity** in the sidebar (or **More → Earn from liquidity** on any stock page). Each pool is one stock and one maturity; the table shows its size and the dividend yield the market expects.
   </Step>
-  <Step title="Add to the pool">
-    Open **More → Add liquidity**, enter the dividend tokens to add, and the ticket shows the tokenized stock needed to match the pool's current ratio. Confirm. You receive pool shares.
+  <Step title="Enter the shares to deposit">
+    You deposit the tokenized stock, for example `MSFTc`. Xero splits just enough of it that the pool receives dividend tokens and shares in the mix it already holds, and you keep the matching **share tokens**. The ticket shows what goes into the pool, the share tokens you keep, and your share of the pool.
   </Step>
-  <Step title="Withdraw any time">
-    **More → Remove liquidity** returns your share of both sides. Withdrawals work in every state, including after maturity and during pauses.
+  <Step title="Review and confirm">
+    Select **Review deposit**, check the summary, then **Confirm deposit**. It's one transaction (plus a one-time token approval).
   </Step>
 </Steps>
 
+## What you hold afterwards
+
+| | Where | Worth |
+| --- | --- | --- |
+| Pool shares | Your wallet | Your part of the pool's dividend tokens and shares |
+| Share tokens | Your wallet | The share part of what was split; redeem them at maturity |
+
+Share tokens plus the pool's dividend tokens add back up to whole shares, so together with the pooled shares you still hold everything you deposited (less the 0.05% split fee).
+
+## Withdraw
+
+Open the pool and choose **Withdraw**, enter the pool shares to remove, then review and confirm.
+
+- **Before maturity**, Xero rejoins the pool's dividend tokens with your share tokens and pays everything back as shares in one transaction. If you've sold some share tokens, the unmatched dividend tokens come back as they are.
+- **After maturity**, you receive the pool's shares and dividend tokens; redeem your share tokens separately from **Portfolio**.
+
+Withdrawals work in every state, including during pauses.
+
 ## Risks
 
-If the expected dividend yield moves, the pool's mix of dividend tokens and stock changes, and you may end up with less value than if you'd held the tokens yourself. Dividend tokens in the pool also lose value as maturity approaches, offset by the dividends they collect. Keep the share tokens from step 1: they redeem for shares at maturity.
+If the market's dividend expectations move, the pool's mix of dividend tokens and shares shifts, and you can end up slightly ahead of or behind simply holding the shares. Dividend tokens in the pool lose value as maturity approaches, offset by the dividends they collect.

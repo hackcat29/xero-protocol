@@ -15,6 +15,7 @@ const pages = [
   { path: '/app', wait: '.best strong', name: 'home', height: 1600 },
   { path: '/markets', wait: '.stock-item', name: 'markets', height: 1400 },
   { path: '/activity', wait: '.empty-state', name: 'activity', height: 900 },
+  { path: '/liquidity', wait: '.table tbody tr', name: 'liquidity', height: 1400 },
   { path: '/discount', wait: '.ticket .amount', name: 'discount', height: 1600 },
   { path: '/upfront', wait: '.ticket .amount', name: 'upfront', height: 1600 },
   { path: '/markets/MSFTc?m=1Y', wait: '.ticket .amount', name: 'asset', height: 1900 },

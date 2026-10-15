@@ -28,7 +28,7 @@ flowchart LR
 | **XeroFactory** | Creates and registers vaults; holds fee settings and the treasury. |
 | **XeroYieldMarket** | A pool trading one vault's YT against its tokenized stock. Prices by an implied dividend rate that decays to maturity. Its ERC-20 is the LP share. |
 | **YieldMarketFactory** | Creates the one canonical market per vault and selects the pricing engine. |
-| **XeroRouter** | Stateless one-transaction flows: buy at a discount, take dividends upfront, split, exit. Holds nothing between calls. |
+| **XeroRouter** | Stateless one-transaction flows: buy at a discount, take dividends upfront, provide and withdraw liquidity, split, exit. Holds nothing between calls. |
 | **CorporateActionEngine** | Append-only log of corporate actions per stock, effective once a quorum of reporters agrees. |
 | **RiskGuardian** | Circuit breakers that can stop new deposits and trades, never exits. |
 | **XeroOracle** | USD prices with staleness checks. Display only: no settlement depends on it. |

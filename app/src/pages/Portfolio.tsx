@@ -5,7 +5,7 @@ import { TestTokensButton } from '../components/DevConsole'
 import { Skeleton } from '../components/Info'
 import { WalletButton } from '../components/Nav'
 import { company, term, ticker } from '../lib/assets'
-import { amount, date, toNum, usd } from '../lib/format'
+import { amount, date, pct, toNum, usd } from '../lib/format'
 import { abis, isDemo } from '../lib/network'
 import { usePortfolio, useProtocol, type Position } from '../lib/protocol'
 import { ACCOUNT_PLACEHOLDER, useTx } from '../lib/tx'
@@ -91,6 +91,7 @@ export function Portfolio() {
                   <th>Stock</th>
                   <th className="r">Shares due</th>
                   <th className="r">Dividend tokens</th>
+                  <th className="r">Liquidity</th>
                   <th className="r">To claim</th>
                   <th className="r">Value today</th>
                   <th />
@@ -110,6 +111,7 @@ export function Portfolio() {
                     </td>
                     <td className="r">{p.pt > 0n ? amount(p.pt) : '—'}</td>
                     <td className="r gold">{p.yt > 0n ? amount(p.yt) : '—'}</td>
+                    <td className="r">{p.lp > 0n ? <><b>{usd(p.lpUsd)}</b><small>{pct(p.lpShare, 2)} of pool</small></> : '—'}</td>
                     <td className="r">{p.claimable > 0n ? `${amount(p.claimable)} ${p.market.symbol}` : '—'}</td>
                     <td className="r"><b>{usd(p.valueUsd)}</b></td>
                     <td className="r">
@@ -119,6 +121,7 @@ export function Portfolio() {
                             Claim
                           </button>
                         )}
+                        {p.lp > 0n && <Link className="btn btn-sm" to={`/liquidity?s=${p.market.symbol}&m=${p.market.label}`}>Liquidity</Link>}
                         <Link className="btn btn-sm btn-ghost" to={`/markets/${p.market.symbol}?m=${p.market.label}${p.market.matured ? '&do=redeem' : ''}`}>
                           {p.market.matured ? 'Redeem' : 'Manage'}
                         </Link>

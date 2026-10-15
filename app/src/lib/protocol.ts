@@ -210,6 +210,8 @@ export type Position = {
   lp: bigint
   claimable: bigint
   valueUsd: number
+  lpUsd: number // value of this market's pool shares
+  lpShare: number // fraction of the pool
 }
 
 export type Portfolio = {
@@ -237,13 +239,15 @@ async function loadPortfolio(account: Address, p: Protocol): Promise<Portfolio> 
       const asset = p.assets.find((a) => a.token === m.token)!
       const px = toNum(asset.priceUsd)
       let lpUsd = 0
+      let lpShare = 0
       if (lp > 0n) {
         const supply = await read<bigint>(m.market, abis.XeroYieldMarket, 'totalSupply')
-        lpUsd = supply > 0n ? (toNum(lp) / toNum(supply)) * m.liquidityUsd : 0
+        lpShare = supply > 0n ? toNum(lp) / toNum(supply) : 0
+        lpUsd = lpShare * m.liquidityUsd
       }
       const valueUsd =
         (toNum(pt) * toNum(m.ptPrice) + toNum(yt) * toNum(m.ytPrice) + toNum(claimable)) * px + lpUsd
-      return { market: m, pt, yt, lp, claimable, valueUsd }
+      return { market: m, pt, yt, lp, claimable, valueUsd, lpUsd, lpShare }
     }),
   )
   const stocks: Record<Address, bigint> = {}

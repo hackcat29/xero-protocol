@@ -2,7 +2,7 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { StockMark } from './Brand'
-import { ActivityIcon, ArrowIcon, DiscountIcon, DocsIcon, HomeIcon, MarketsIcon, PortfolioIcon, SearchIcon, UpfrontIcon } from './icons'
+import { ActivityIcon, ArrowIcon, DiscountIcon, DocsIcon, HomeIcon, MarketsIcon, PoolIcon, PortfolioIcon, SearchIcon, UpfrontIcon } from './icons'
 import { DOCS_URL } from './Nav'
 import { company, ticker } from '../lib/assets'
 import { usd } from '../lib/format'
@@ -81,6 +81,7 @@ function Palette({ close }: { close: () => void }) {
       { id: 'markets', label: 'Markets', icon: <MarketsIcon />, to: '/markets', k: 'markets prices all stocks' },
       { id: 'discount', label: 'Buy at a discount', icon: <DiscountIcon />, to: '/discount', k: 'buy discount cheap principal' },
       { id: 'upfront', label: 'Dividends upfront', icon: <UpfrontIcon />, to: '/upfront', k: 'sell dividends upfront payout advance' },
+      { id: 'liquidity', label: 'Liquidity', icon: <PoolIcon />, to: '/liquidity', k: 'liquidity pool earn fees lp provide deposit' },
       { id: 'portfolio', label: 'Portfolio', icon: <PortfolioIcon />, to: '/portfolio', k: 'portfolio positions holdings redeem claim' },
       { id: 'activity', label: 'Activity', icon: <ActivityIcon />, to: '/activity', k: 'activity history transactions' },
       { id: 'docs', label: 'Documentation', icon: <DocsIcon />, to: DOCS_URL, k: 'docs help guides learn' },

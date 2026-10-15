@@ -1,6 +1,8 @@
 import * as Tabs from '@radix-ui/react-tabs'
 import { useQuery } from '@tanstack/react-query'
-import { useDeferredValue, useMemo, useState, type ReactNode } from 'react'
+import { useDeferredValue, useState, type ReactNode } from 'react'
+import { Link } from 'react-router'
+import { ArrowIcon } from './icons'
 import type { Address } from 'viem'
 import { useAccount, useReadContract } from 'wagmi'
 import { AmountInput } from './AmountInput'
@@ -32,7 +34,7 @@ export function useBalance(token: Address | undefined) {
 
 /** On-chain quote. The previous result stays visible while refetching, but `fresh` is only true once the
  *  quote matches the current input and chain state; submissions must use fresh quotes only. */
-function useQuote<T>(key: unknown[], enabled: boolean, fn: () => Promise<T>) {
+export function useQuote<T>(key: unknown[], enabled: boolean, fn: () => Promise<T>) {
   const q = useQuery({
     queryKey: ['quote', ...key],
     queryFn: fn,
@@ -46,9 +48,9 @@ function useQuote<T>(key: unknown[], enabled: boolean, fn: () => Promise<T>) {
   return { ...q, fresh: enabled && q.data !== undefined && !q.isPlaceholderData && !q.isFetching }
 }
 
-const minOut = (v: bigint, slip: bigint) => (v * (10_000n - slip)) / 10_000n
-const usdOf = (raw: bigint, asset: Asset) => (asset.priceFresh ? usd(toNum(raw) * toNum(asset.priceUsd)) : undefined)
-const shares = (units: bigint) => toNum(units).toLocaleString('en-US', { maximumFractionDigits: 4 })
+export const minOut = (v: bigint, slip: bigint) => (v * (10_000n - slip)) / 10_000n
+export const usdOf = (raw: bigint, asset: Asset) => (asset.priceFresh ? usd(toNum(raw) * toNum(asset.priceUsd)) : undefined)
+export const shares = (units: bigint) => toNum(units).toLocaleString('en-US', { maximumFractionDigits: 4 })
 
 // ------------------------------------------------------------------ shared bits
 
@@ -75,7 +77,7 @@ export function SlippagePicker({ slip, setSlip }: { slip: bigint; setSlip: (s: b
   )
 }
 
-function Row({ k, v, tip, tone }: { k: string; v: ReactNode; tip?: ReactNode; tone?: 'up' | 'down' | 'gold' }) {
+export function Row({ k, v, tip, tone }: { k: string; v: ReactNode; tip?: ReactNode; tone?: 'up' | 'down' | 'gold' }) {
   return (
     <div className="row">
       <span>{tip ? <Info tip={tip}>{k}</Info> : k}</span>
@@ -84,7 +86,7 @@ function Row({ k, v, tip, tone }: { k: string; v: ReactNode; tip?: ReactNode; to
   )
 }
 
-function Submit({ label, disabled, onClick, pending, gold }: { label: string; disabled?: boolean; onClick: () => void; pending: boolean; gold?: boolean }) {
+export function Submit({ label, disabled, onClick, pending, gold }: { label: string; disabled?: boolean; onClick: () => void; pending: boolean; gold?: boolean }) {
   const { address } = useAccount()
   if (!address) return <WalletButton block />
   return (
@@ -95,7 +97,7 @@ function Submit({ label, disabled, onClick, pending, gold }: { label: string; di
 }
 
 /** On testnet, an empty wallet gets a one-click way to claim test stock instead of a dead end. */
-function NeedTokens({ asset, balance }: { asset: Asset; balance: bigint }) {
+export function NeedTokens({ asset, balance }: { asset: Asset; balance: bigint }) {
   const { address } = useAccount()
   if (!isDemo || !address || balance > 0n) return null
   return (
@@ -105,7 +107,7 @@ function NeedTokens({ asset, balance }: { asset: Asset; balance: bigint }) {
   )
 }
 
-function Closed({ market }: { market: Market }) {
+export function Closed({ market }: { market: Market }) {
   if (market.matured) return <p className="banner">This maturity has ended. Use Redeem to collect your shares.</p>
   if (market.frozen) return <p className="banner banner-warn">Paused while a corporate action is confirmed. Existing positions can still exit.</p>
   if (market.halted) return <p className="banner banner-warn">New deposits are paused for this stock. Existing positions can still exit.</p>
@@ -399,17 +401,13 @@ function RedeemForm({ asset, market, now }: { asset: Asset; market: Market; now:
 // ------------------------------------------------------------------ Advanced: split, liquidity
 
 function AdvancedForm({ asset, market }: { asset: Asset; market: Market }) {
-  const [mode, setMode] = useState<'split' | 'add' | 'remove'>('split')
   return (
     <div className="stack">
-      <div className="seg" role="radiogroup" aria-label="Action">
-        {(['split', 'add', 'remove'] as const).map((m) => (
-          <button key={m} role="radio" aria-checked={mode === m} className={mode === m ? 'on' : ''} onClick={() => setMode(m)}>
-            {m === 'split' ? 'Split shares' : m === 'add' ? 'Add liquidity' : 'Remove liquidity'}
-          </button>
-        ))}
-      </div>
-      {mode === 'split' ? <SplitForm asset={asset} market={market} /> : <PoolForm asset={asset} market={market} mode={mode} />}
+      <Link className="pool-cta" to={`/liquidity?s=${asset.symbol}&m=${market.label}`}>
+        <span><b>Earn from liquidity</b><small>Deposit {asset.symbol} in one step and earn the 0.3% trading fee. Your shares stay invested.</small></span>
+        <ArrowIcon size={18} />
+      </Link>
+      <SplitForm asset={asset} market={market} />
     </div>
   )
 }
@@ -436,63 +434,6 @@ function SplitForm({ asset, market }: { asset: Asset; market: Market }) {
         pending={pending}
         onClick={async () => {
           if (await run(`Split ${ticker(asset.symbol)}`, [{ address: market.vault, abi: abis.XeroVault, functionName: 'strip', args: [value, ACCOUNT], label: 'Split' }], [{ token: asset.token, spender: market.vault, amount: value, symbol: asset.symbol }])) setInput('')
-        }}
-      />
-    </>
-  )
-}
-
-function PoolForm({ asset, market, mode }: { asset: Asset; market: Market; mode: 'add' | 'remove' }) {
-  const [input, setInput] = useState('')
-  const value = parse(useDeferredValue(input))
-  const ytBal = useBalance(market.yieldToken)
-  const stockBal = useBalance(asset.token)
-  const lpBal = useBalance(market.market)
-  const { run, pending } = useTx()
-  const supply = useQuery({ queryKey: ['lpSupply', market.market], queryFn: () => read<bigint>(market.market, abis.XeroYieldMarket, 'totalSupply'), refetchInterval: 8_000 })
-  const quoteNeeded = market.reserveYt > 0n ? (value * market.reserveQuote) / market.reserveYt + 1n : 0n
-  const share = supply.data && supply.data > 0n ? toNum(lpBal) / toNum(supply.data) : 0
-  const out = useMemo(() => {
-    if (!supply.data || supply.data === 0n) return { yt: 0n, quote: 0n }
-    return { yt: (value * market.reserveYt) / supply.data, quote: (value * market.reserveQuote) / supply.data }
-  }, [value, supply.data, market.reserveYt, market.reserveQuote])
-  const addShort = value > ytBal || quoteNeeded > stockBal
-
-  return (
-    <>
-      <p className="hint">Liquidity providers earn the 0.3% trading fee plus the dividends on the dividend tokens held by the pool.</p>
-      {mode === 'add' ? (
-        <>
-          <AmountInput label="Dividend tokens" value={input} onChange={setInput} symbol={market.ytSymbol} tokenLabel={ytName(market)} kind="yt" balance={ytBal} error={value > ytBal} />
-          <AmountInput label={`${asset.symbol} to match`} value={value > 0n ? amount(quoteNeeded) : ''} symbol={asset.symbol} tokenLabel={asset.symbol} readOnly balance={stockBal} error={quoteNeeded > stockBal} />
-        </>
-      ) : (
-        <>
-          <AmountInput label="Pool shares" value={input} onChange={setInput} symbol="LP" tokenLabel="Pool shares" kind="lp" balance={lpBal} error={value > lpBal} />
-          <div className="rows"><Row k="You receive" v={value > 0n ? `${amount(out.yt)} dividend tokens + ${amount(out.quote)} ${asset.symbol}` : '—'} /></div>
-        </>
-      )}
-      <div className="rows">
-        <Row k="Pool size" v={usd(market.liquidityUsd, 0)} />
-        <Row k="Your share" v={pct(share)} />
-      </div>
-      <Submit
-        label={mode === 'add' ? (addShort ? 'Not enough balance' : 'Add liquidity') : value > lpBal ? 'Not enough balance' : 'Remove liquidity'}
-        disabled={value === 0n || (mode === 'add' ? addShort : value > lpBal)}
-        pending={pending}
-        onClick={async () => {
-          const ok =
-            mode === 'add'
-              ? await run(
-                  'Add liquidity',
-                  [{ address: market.market, abi: abis.XeroYieldMarket, functionName: 'addLiquidity', args: [value, quoteNeeded, 0n, ACCOUNT] }],
-                  [
-                    { token: market.yieldToken, spender: market.market, amount: value, symbol: 'dividend tokens' },
-                    { token: asset.token, spender: market.market, amount: quoteNeeded, symbol: asset.symbol },
-                  ],
-                )
-              : await run('Remove liquidity', [{ address: market.market, abi: abis.XeroYieldMarket, functionName: 'removeLiquidity', args: [value, (out.yt * 995n) / 1000n, (out.quote * 995n) / 1000n, ACCOUNT] }])
-          if (ok) setInput('')
         }}
       />
     </>

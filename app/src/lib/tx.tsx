@@ -68,8 +68,11 @@ export function useTx() {
               ;({ request } = await simulate())
               break
             } catch (e) {
-              // a revert on the first step is a real answer; anything else may be a dropped or lagging RPC call
-              const revert = /revert/i.test(String((e as Error)?.message))
+              // a revert on the first step is a real answer; rate limits and dropped or lagging RPC calls are not,
+              // even when viem wraps them in a "reverted" message
+              const msg = String((e as Error)?.message) + String((e as { details?: string })?.details ?? '')
+              const transient = /limit|rate|timed? ?out|fetch|network|resource not found|502|503|429/i.test(msg)
+              const revert = /revert/i.test(msg) && !transient
               if (attempt >= 4 || (i === 0 && revert)) throw e
               await new Promise((r) => setTimeout(r, 1500))
             }

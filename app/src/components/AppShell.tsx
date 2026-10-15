@@ -3,7 +3,7 @@ import { Link, NavLink } from 'react-router'
 import { AccountButton } from './Account'
 import { Logo } from './Brand'
 import { TestTokensButton } from './DevConsole'
-import { ActivityIcon, DiscountIcon, DocsIcon, GiftIcon, HomeIcon, MarketsIcon, PortfolioIcon, UpfrontIcon } from './icons'
+import { ActivityIcon, DiscountIcon, DocsIcon, GiftIcon, HomeIcon, MarketsIcon, PoolIcon, PortfolioIcon, UpfrontIcon } from './icons'
 import { DOCS_URL, GitHubIcon, NetworkSwitch, REPO_URL } from './Nav'
 import { SearchButton } from './Search'
 import { chain, isDemo } from '../lib/network'
@@ -24,6 +24,10 @@ const NAV: { group?: string; items: { to: string; label: string; icon: ReactNode
       { to: '/discount', label: 'Buy at a discount', icon: <DiscountIcon /> },
       { to: '/upfront', label: 'Dividends upfront', icon: <UpfrontIcon /> },
     ],
+  },
+  {
+    group: 'Earn',
+    items: [{ to: '/liquidity', label: 'Liquidity', icon: <PoolIcon /> }],
   },
   {
     group: 'Account',

@@ -68,6 +68,41 @@ function stripAndSellYield(
 
 Quote with `vault.previewStrip(raw)` followed by `market.quoteYtForQuote(units)`.
 
+## addLiquidityFromStock
+
+Provide liquidity from the tokenized stock alone.
+
+```solidity
+function addLiquidityFromStock(
+    XeroVault vault,
+    XeroYieldMarket market,
+    uint256 raw,
+    uint256 minLp,
+    address to
+) external returns (uint256 lp, uint256 units);
+```
+
+Splits `x` of `raw` so that `previewStrip(x) : (raw − x)` matches the pool's `reserveYt : reserveQuote`, i.e. `x = raw · a / (a + previewStrip(raw) · reserveQuote)` with `a = raw · reserveYt`. It adds the YT and the remaining stock with `addLiquidity`, then sends the LP shares, the `units` of PT and any unused YT or stock to `to`. PT plus pooled YT plus pooled stock keep the depositor's full share exposure. `minLp` protects against the pool moving; the market reverts with `Slippage` below it.
+
+<ResponseField name="lp" type="uint256">LP shares minted to `to`.</ResponseField>
+<ResponseField name="units" type="uint256">PT delivered to `to`.</ResponseField>
+
+## removeLiquidityToStock
+
+Withdraw liquidity back into the tokenized stock before maturity. Approve the router for the LP shares and the PT first.
+
+```solidity
+function removeLiquidityToStock(
+    XeroVault vault,
+    XeroYieldMarket market,
+    uint256 lp,
+    uint256 minRaw,
+    address to
+) external returns (uint256 raw);
+```
+
+Removes `lp`, rejoins the pool's YT with up to that many of the caller's PT (`recombine`), and sends the stock (rejoined plus the pool's stock) to `to`, along with any YT the caller had no PT for. Reverts with `InsufficientOutput` below `minRaw`. After maturity `recombine` is closed; use the market's `removeLiquidity` and redeem PT separately.
+
 ## strip
 
 ```solidity

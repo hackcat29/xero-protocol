@@ -887,3 +887,15 @@ kbd { font-family: var(--sans); font-size: 11.5px; font-weight: 600; padding: 2p
 .banner-ready .btn { margin-left: auto; }
 .workspace > .offers-col { grid-area: offers; min-width: 0; }
 .others-note { margin-top: 12px; }
+
+/* liquidity */
+.pool-cta { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-radius: var(--r-md); background: var(--brand-soft); color: var(--text); }
+.pool-cta span { display: grid; gap: 2px; }
+.pool-cta small { color: var(--text-2); font-size: 13px; }
+.pool-cta svg { color: var(--brand); flex: none; }
+.pool-cta:hover { box-shadow: 0 0 0 1px var(--brand) inset; }
+.pool-mine { margin-bottom: 14px; }
+.pool-list { list-style: none; margin: 0; padding: 4px 8px 8px; }
+.pool-list button { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px; border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; text-align: left; color: inherit; }
+.pool-list button:hover, .pool-list button.on { background: var(--surface-2); }
+.table tbody tr.row-on { background: var(--brand-soft); }

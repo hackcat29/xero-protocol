@@ -33,7 +33,7 @@ const MENUS: Menu[] = [
       { label: 'Buy at a discount', desc: 'Own stocks for less than the market price', href: '/#discount', icon: I.tag },
       { label: 'Dividends upfront', desc: "Get next year's dividends today, keep your shares", href: '/#upfront', icon: I.upfront },
       { label: 'Dividend trading', desc: "Trade a stock's dividend stream on its own", href: docsLink('guides/trade-dividends'), icon: I.stream },
-      { label: 'Liquidity', desc: 'Earn trading fees and dividends', href: docsLink('guides/provide-liquidity'), icon: I.pool },
+      { label: 'Liquidity', desc: 'Earn trading fees, stay invested', href: '/liquidity', icon: I.pool },
     ],
     footer: { label: "See today's prices", href: '/markets' },
   },
