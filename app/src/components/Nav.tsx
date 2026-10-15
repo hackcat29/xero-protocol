@@ -1,43 +1,15 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useEffect, useRef, useState } from 'react'
-import { Link, NavLink } from 'react-router'
+import { NavLink } from 'react-router'
 import { Logo } from './Brand'
 import { chain, isDemo, isDevnet, networks, switchNetwork } from '../lib/network'
 import { TestTokensButton } from './DevConsole'
 
 export const REPO_URL = 'https://github.com/hackcat29/xero-protocol'
-export const DOCS_URL: string = import.meta.env.VITE_DOCS_URL ?? `${REPO_URL}/tree/main/docs`
-
-/** Marketing header: the two things Xero does, the markets, and a way into the app. */
-export function SiteNav() {
-  return (
-    <>
-      {isDemo && (
-        <div className="announce">
-          Xero is live on Base Sepolia with free test tokens. <Link to="/markets">Try it</Link>
-        </div>
-      )}
-      <header className="nav nav-site">
-        <div className="nav-inner">
-          <Logo />
-          <nav className="site-links" aria-label="Site">
-            <a href="/#discount">Buy at a discount</a>
-            <a href="/#upfront">Dividends upfront</a>
-            <Link to="/markets">Markets</Link>
-            <a href="/#faq">FAQ</a>
-            <a href={DOCS_URL} target="_blank" rel="noreferrer">Docs</a>
-          </nav>
-          <div className="nav-right">
-            <a className="icon-link hide-sm" href={REPO_URL} target="_blank" rel="noreferrer" aria-label="Xero on GitHub" title="GitHub">
-              <GitHubIcon />
-            </a>
-            <Link to="/markets" className="btn btn-primary">Open app</Link>
-          </div>
-        </div>
-      </header>
-    </>
-  )
-}
+const HOSTED_DOCS: string | undefined = import.meta.env.VITE_DOCS_URL
+export const DOCS_URL: string = HOSTED_DOCS ?? `${REPO_URL}/tree/main/docs`
+/** A docs page by its Mintlify path ("guides/buy-at-a-discount"): the hosted site when configured, else the source on GitHub. */
+export const docsLink = (path: string) => (HOSTED_DOCS ? `${HOSTED_DOCS.replace(/\/$/, '')}/${path}` : `${REPO_URL}/blob/main/docs/${path}.mdx`)
 
 /** App header: what you can do, your holdings, network and wallet. */
 export function AppNav() {

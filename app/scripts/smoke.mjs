@@ -10,6 +10,8 @@ mkdirSync(OUT, { recursive: true })
 
 const pages = [
   { path: '/', wait: '.proof b', name: 'landing', height: 3800 },
+  { path: '/pricing', wait: '.table tbody tr', name: 'pricing', height: 2600 },
+  { path: '/security', wait: '.pillars', name: 'security', height: 2400 },
   { path: '/markets', wait: '.table tbody tr', name: 'markets', height: 1400 },
   { path: '/discount', wait: '.ticket .amount', name: 'discount', height: 1600 },
   { path: '/upfront', wait: '.ticket .amount', name: 'upfront', height: 1600 },

@@ -144,6 +144,7 @@ export function Landing() {
           <span className="eyebrow">Security</span>
           <h2>Built to be boring with your money</h2>
           <p>The rules are written into public smart contracts on Base. Nobody at Xero can move, freeze or lend out your shares.</p>
+          <Link to="/security" className="link section-link">How we keep your shares safe →</Link>
         </div>
         <div className="safety">
           <Safe title="Fully backed" body="Every share token and dividend token is backed by real tokenized shares held in the vault, one for one." />

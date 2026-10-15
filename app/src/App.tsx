@@ -5,7 +5,8 @@ import { BrowserRouter, Link, Navigate, Outlet, Route, Routes, useLocation } fro
 import { Toaster } from 'sonner'
 import { WagmiProvider } from 'wagmi'
 import { useEffect } from 'react'
-import { AppNav, DOCS_URL, SiteNav } from './components/Nav'
+import { AppNav, DOCS_URL } from './components/Nav'
+import { SiteNav } from './components/SiteNav'
 import { AppFooter, Footer } from './components/Footer'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { Landing } from './pages/Landing'
@@ -13,6 +14,8 @@ import { Markets } from './pages/Markets'
 import { AssetPage } from './pages/AssetPage'
 import { DiscountPage, UpfrontPage } from './pages/Offers'
 import { Portfolio } from './pages/Portfolio'
+import { PricingPage } from './pages/Pricing'
+import { SecurityPage } from './pages/Security'
 import { book, chain } from './lib/network'
 import { wagmiConfig } from './lib/wagmi'
 
@@ -40,6 +43,8 @@ export default function App() {
               <Routes>
                 <Route element={<Shell />}>
                   <Route index element={<Landing />} />
+                  <Route path="pricing" element={<PricingPage />} />
+                  <Route path="security" element={<SecurityPage />} />
                   <Route path="markets" element={<Gate><Markets /></Gate>} />
                   <Route path="markets/:symbol" element={<Gate><AssetPage /></Gate>} />
                   <Route path="discount" element={<Gate><DiscountPage /></Gate>} />
@@ -61,13 +66,16 @@ export default function App() {
   )
 }
 
+/** Marketing pages get the site header and footer; everything else is the app. */
+const SITE_PAGES = new Set(['/', '/pricing', '/security'])
+
 function Shell() {
   const { pathname, hash } = useLocation()
   useEffect(() => {
     if (hash) document.getElementById(hash.slice(1))?.scrollIntoView()
     else window.scrollTo(0, 0)
   }, [pathname, hash])
-  const site = pathname === '/'
+  const site = SITE_PAGES.has(pathname)
   return (
     <div className={`shell ${site ? 'shell-site' : 'shell-app'}`}>
       {site ? <SiteNav /> : <AppNav />}

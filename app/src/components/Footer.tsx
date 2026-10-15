@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { Logo } from './Brand'
-import { DOCS_URL, GitHubIcon, REPO_URL } from './Nav'
+import { DOCS_URL, GitHubIcon, REPO_URL, docsLink } from './Nav'
 import { BASE_FAUCET_URL, chain, explorer, isDemo } from '../lib/network'
 
 const LEGAL =
@@ -18,20 +18,23 @@ export function Footer() {
         </div>
         <div className="footer-cols">
           <div>
-            <h4>Product</h4>
+            <h4>Products</h4>
+            <Link to="/#discount">Buy at a discount</Link>
+            <Link to="/#upfront">Dividends upfront</Link>
             <Link to="/markets">Markets</Link>
-            <Link to="/discount">Buy at a discount</Link>
-            <Link to="/upfront">Dividends upfront</Link>
-            <Link to="/portfolio">Portfolio</Link>
+            <Link to="/pricing">Pricing</Link>
           </div>
           <div>
             <h4>Learn</h4>
-            <a href={DOCS_URL} target="_blank" rel="noreferrer">Documentation</a>
-            <a href="/#faq">FAQ</a>
-            <a href="/#safety">Security</a>
+            <Link to="/#split">How Xero works</Link>
+            <a href={docsLink('quickstart')} target="_blank" rel="noreferrer">Guides</a>
+            <Link to="/#faq">FAQ</Link>
+            <Link to="/security">Security</Link>
           </div>
           <div>
             <h4>Developers</h4>
+            <a href={DOCS_URL} target="_blank" rel="noreferrer">Documentation</a>
+            <a href={docsLink('developers/deployments')} target="_blank" rel="noreferrer">Contract addresses</a>
             <a href={REPO_URL} target="_blank" rel="noreferrer">GitHub</a>
             {explorer && <a href={explorer} target="_blank" rel="noreferrer">Block explorer</a>}
             <a href={BASE_FAUCET_URL} target="_blank" rel="noreferrer">Test ETH faucet</a>
